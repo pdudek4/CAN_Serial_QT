@@ -177,7 +177,7 @@ void MainWindow::on_pushButtonFilterSet_clicked()
 {
     //wyslij ramke z wartosciami 4 filtrow niby dziala
     char msg[24];
-    sprintf(msg, "FLTR,%03x%03x%03x%03x;;;;;", ui->spinBox_F0->value(),
+    sprintf(msg, "FCHG,%03x%03x%03x%03x;;;;;", ui->spinBox_F0->value(),
             ui->spinBox_F1->value(), ui->spinBox_F2->value(), ui->spinBox_F3->value());
 
     this->sendMessageToDevice(msg);
@@ -187,6 +187,8 @@ void MainWindow::on_pushButtonFilterSet_clicked()
 void MainWindow::on_pushButtonFilterOff_clicked()
 {
     //wyslij ramke z informacja zeby wylaczyc filtrowanie
+    this->sendMessageToDevice("FDEA,123456789123;;;;;");
+    qDebug() << "Wyslano: " << "FDEA,123456789123;;;;;";
 }
 
 void MainWindow::on_pushButtonSendMsg_clicked()
