@@ -12,12 +12,15 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    CANopenui = new CANOpen(this);
     this->device = new QSerialPort(this);
     setUi();
 }
 
 MainWindow::~MainWindow()
 {
+    delete device;
+    delete CANopenui;
     delete ui;
 }
 
@@ -91,6 +94,23 @@ void MainWindow::setUi()
     ui->spinBox_F2->clear();
     ui->spinBox_F3->clear();
 
+    ui->comboBoxPasmo->addItem("125");
+    ui->comboBoxPasmo->addItem("250");
+    ui->comboBoxPasmo->addItem("500");
+    ui->comboBoxPasmo->addItem("1000");
+
+    ui->spinBoxIndex->setMaximum(0xFFFF);
+    ui->spinBoxSubIndex->setMaximum(0x20);
+    ui->spinBoxODValue->setMaximum(0xFFFFFFFF);
+    ui->spinBoxIndex->setPrefix("0x");
+    ui->spinBoxSubIndex->setPrefix("0x");
+    ui->spinBoxODValue->setPrefix("0x");
+    ui->spinBoxIndex->setDisplayIntegerBase(16);
+    ui->spinBoxSubIndex->setDisplayIntegerBase(16);
+    ui->spinBoxODValue->setDisplayIntegerBase(16);
+    ui->spinBoxIndex->clear();
+    ui->spinBoxSubIndex->clear();
+    ui->spinBoxODValue->clear();
 }
 
 void MainWindow::on_pushButtonLink_clicked()
@@ -175,7 +195,7 @@ void MainWindow::readFromPort()
 
 void MainWindow::on_pushButtonFilterSet_clicked()
 {
-    //wyslij ramke z wartosciami 4 filtrow niby dziala
+    //wyslij ramke z wartosciami 4 filtrow
     char msg[24];
     sprintf(msg, "FCHG,%03x%03x%03x%03x;;;;;", ui->spinBox_F0->value(),
             ui->spinBox_F1->value(), ui->spinBox_F2->value(), ui->spinBox_F3->value());
@@ -197,6 +217,70 @@ void MainWindow::on_pushButtonSendMsg_clicked()
     sprintf(msg, "M%03x,%02x%02x%02x%02x%02x%02x%02x%02x;", ui->spinBox_ID->value(),
             ui->spinBox_B0->value(), ui->spinBox_B1->value(), ui->spinBox_B2->value(), ui->spinBox_B3->value(),
             ui->spinBox_B4->value(), ui->spinBox_B5->value(), ui->spinBox_B6->value(), ui->spinBox_B7->value());
+
+    this->sendMessageToDevice(msg);
+    qDebug() << "Wyslano: " << msg;
+}
+
+void MainWindow::on_pushButtonPasmo_clicked()
+{
+    QString msg = "PASM,";
+    QString pasmo_cb = ui->comboBoxPasmo->currentText();
+    pasmo_cb.resize(3);
+    msg.append(pasmo_cb);
+    msg.append("1234567890123;");
+
+    this->sendMessageToDevice(msg);
+    qDebug() << "Wyslano: " << msg;
+}
+
+void MainWindow::on_pushButton_clicked()
+{
+   //CANopenui->show();
+}
+
+void MainWindow::on_pushButtonSDORead_clicked()
+{
+    //wyslij komende na can
+    // ID=0x601 B0=0x40 B1=indexMSB B2=indexLSB B3=subindex B4-B7=0
+    char msg[24];
+    uint16_t index;
+    uint8_t indexM, indexL;
+    index = ui->spinBoxIndex->value();
+    indexM = index >> 8;
+    indexL = index & 0x0f;
+    sprintf(msg, "M601,%02x%02x%02x%02x00000000;",
+            0x40, indexM, indexL, ui->spinBoxSubIndex->value());
+
+    //this->sendMessageToDevice(msg);
+    //komunikat potwierdzający do logów
+    qDebug() << "Wyslano: " << msg;
+    addToLogs("Wysłano komendę SDO Read");
+
+}
+
+void MainWindow::on_pushButtonSDOWrite_clicked()
+{
+
+}
+
+void MainWindow::on_pushButtoOp_clicked()
+{
+    //ID=0x000 B0=0x01 (cmd), B1=nodeID
+    char msg[24];
+    uint8_t nodeID = 0x01;
+    sprintf(msg, "M000,%02x%02x000000000000;", 0x01, nodeID);
+
+    this->sendMessageToDevice(msg);
+    qDebug() << "Wyslano: " << msg;
+}
+
+void MainWindow::on_pushButtonPreOp_clicked()
+{
+    //ID=0x000 B0=0x80 (cmd), B1=nodeID
+    char msg[24];
+    uint8_t nodeID = 0x01;
+    sprintf(msg, "M000,%02x%02x000000000000;", 0x80, nodeID);
 
     this->sendMessageToDevice(msg);
     qDebug() << "Wyslano: " << msg;

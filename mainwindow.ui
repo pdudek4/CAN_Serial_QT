@@ -29,7 +29,7 @@
       <x>10</x>
       <y>0</y>
       <width>381</width>
-      <height>61</height>
+      <height>51</height>
      </rect>
     </property>
     <property name="title">
@@ -39,7 +39,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>30</y>
+       <y>23</y>
        <width>51</width>
        <height>23</height>
       </rect>
@@ -52,7 +52,7 @@
      <property name="geometry">
       <rect>
        <x>250</x>
-       <y>30</y>
+       <y>22</y>
        <width>61</width>
        <height>23</height>
       </rect>
@@ -65,7 +65,7 @@
      <property name="geometry">
       <rect>
        <x>320</x>
-       <y>30</y>
+       <y>22</y>
        <width>51</width>
        <height>23</height>
       </rect>
@@ -78,7 +78,7 @@
      <property name="geometry">
       <rect>
        <x>70</x>
-       <y>30</y>
+       <y>23</y>
        <width>171</width>
        <height>22</height>
       </rect>
@@ -89,9 +89,9 @@
     <property name="geometry">
      <rect>
       <x>260</x>
-      <y>170</y>
+      <y>150</y>
       <width>391</width>
-      <height>341</height>
+      <height>361</height>
      </rect>
     </property>
     <property name="title">
@@ -100,10 +100,10 @@
     <widget class="QTextEdit" name="textEditLogi">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>30</y>
-       <width>371</width>
-       <height>301</height>
+       <x>6</x>
+       <y>23</y>
+       <width>381</width>
+       <height>331</height>
       </rect>
      </property>
     </widget>
@@ -125,9 +125,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>60</y>
+      <y>52</y>
       <width>641</width>
-      <height>101</height>
+      <height>91</height>
      </rect>
     </property>
     <property name="title">
@@ -344,7 +344,7 @@
      <property name="geometry">
       <rect>
        <x>90</x>
-       <y>70</y>
+       <y>66</y>
        <width>181</width>
        <height>21</height>
       </rect>
@@ -353,12 +353,25 @@
       <string>Wyślij</string>
      </property>
     </widget>
+    <widget class="QPushButton" name="pushButton">
+     <property name="geometry">
+      <rect>
+       <x>570</x>
+       <y>65</y>
+       <width>61</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Nie klikaj</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QGroupBox" name="groupBox_2">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>170</y>
+      <y>146</y>
       <width>211</width>
       <height>81</height>
      </rect>
@@ -430,6 +443,176 @@
      </property>
      <property name="text">
       <string>Wyłącz</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QGroupBox" name="Pasmo">
+    <property name="geometry">
+     <rect>
+      <x>410</x>
+      <y>0</y>
+      <width>211</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Pasmo CAN</string>
+    </property>
+    <widget class="QComboBox" name="comboBoxPasmo">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>22</y>
+       <width>91</width>
+       <height>22</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButtonPasmo">
+     <property name="geometry">
+      <rect>
+       <x>110</x>
+       <y>22</y>
+       <width>71</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Ustaw</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QGroupBox" name="groupBox_3">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>231</y>
+      <width>251</width>
+      <height>281</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>CAN Open helper</string>
+    </property>
+    <widget class="QPushButton" name="pushButtoOp">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>30</y>
+       <width>80</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Operational</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButtonPreOp">
+     <property name="geometry">
+      <rect>
+       <x>100</x>
+       <y>30</y>
+       <width>91</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Pre-operational</string>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="spinBoxIndex">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>71</y>
+       <width>71</width>
+       <height>22</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="spinBoxSubIndex">
+     <property name="geometry">
+      <rect>
+       <x>90</x>
+       <y>70</y>
+       <width>51</width>
+       <height>22</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>56</y>
+       <width>47</width>
+       <height>13</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Index</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_2">
+     <property name="geometry">
+      <rect>
+       <x>90</x>
+       <y>54</y>
+       <width>51</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Sub-Index</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButtonSDOWrite">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>100</y>
+       <width>71</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Zmień SDO</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButtonSDORead">
+     <property name="geometry">
+      <rect>
+       <x>90</x>
+       <y>100</y>
+       <width>80</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Odczytaj SDO</string>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="spinBoxODValue">
+     <property name="geometry">
+      <rect>
+       <x>150</x>
+       <y>70</y>
+       <width>91</width>
+       <height>22</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_3">
+     <property name="geometry">
+      <rect>
+       <x>151</x>
+       <y>54</y>
+       <width>51</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Wartość</string>
      </property>
     </widget>
    </widget>
