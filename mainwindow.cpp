@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <windows.h>
 
 #include <QDebug>
 #include <QList>
@@ -7,11 +8,14 @@
 #include <QDateTime>
 #include <stdio.h>
 
+//#define _msglog
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    this->setWindowTitle("LEM CANopen coronavirusless dialog software");
     CANopenui = new CANOpen(this);
     this->device = new QSerialPort(this);
     setUi();
@@ -44,6 +48,7 @@ void MainWindow::addToLogs(QString message)
 
 void MainWindow::sendMessageToDevice(QString message)
 {
+    QString canFrame;
     if(this->device->isOpen() && this->device->isWritable()) {
         this->addToLogs("Wysyłam do STM: " + message);
         this->device->write(message.toStdString().c_str());
@@ -51,6 +56,17 @@ void MainWindow::sendMessageToDevice(QString message)
     else {
         this->addToLogs("Nie mogę wysłać wiadomości. Port nie jest otwarty!");
     }
+#ifdef _msglog
+    if(message.length() == 22){
+        canFrame = "->ID: " + message[1] + message[2] + message[3] +
+                " Dane: " + message[5] + message[6] + " " +
+                message[7] + message[8] + " " + message[9] + message[10] + " " +
+                message[11] + message[12] + " " + message[13] + message[14] + " " +
+                message[15] + message[16] + " " + message[17] + message[18] + " " +
+                message[19] + message[20];
+        addToLogs(canFrame);
+    }
+#endif
 }
 
 void MainWindow::setUi()
@@ -60,6 +76,9 @@ void MainWindow::setUi()
     ui->spinBox_ID->setDisplayIntegerBase(16);
     ui->spinBox_ID->clear();
 
+    ui->spinBox_DLC->setMaximum(0x08);
+    ui->spinBox_DLC->clear();
+
     ui->spinBox_B0->setMaximum(255);
     ui->spinBox_B1->setMaximum(255);
     ui->spinBox_B2->setMaximum(255);
@@ -68,6 +87,22 @@ void MainWindow::setUi()
     ui->spinBox_B5->setMaximum(255);
     ui->spinBox_B6->setMaximum(255);
     ui->spinBox_B7->setMaximum(255);
+    ui->spinBox_B0->setPrefix("0x");
+    ui->spinBox_B1->setPrefix("0x");
+    ui->spinBox_B2->setPrefix("0x");
+    ui->spinBox_B3->setPrefix("0x");
+    ui->spinBox_B4->setPrefix("0x");
+    ui->spinBox_B5->setPrefix("0x");
+    ui->spinBox_B6->setPrefix("0x");
+    ui->spinBox_B7->setPrefix("0x");
+    ui->spinBox_B0->setDisplayIntegerBase(16);
+    ui->spinBox_B1->setDisplayIntegerBase(16);
+    ui->spinBox_B2->setDisplayIntegerBase(16);
+    ui->spinBox_B3->setDisplayIntegerBase(16);
+    ui->spinBox_B4->setDisplayIntegerBase(16);
+    ui->spinBox_B5->setDisplayIntegerBase(16);
+    ui->spinBox_B6->setDisplayIntegerBase(16);
+    ui->spinBox_B7->setDisplayIntegerBase(16);
     ui->spinBox_B0->clear();
     ui->spinBox_B1->clear();
     ui->spinBox_B2->clear();
@@ -101,16 +136,22 @@ void MainWindow::setUi()
 
     ui->spinBoxIndex->setMaximum(0xFFFF);
     ui->spinBoxSubIndex->setMaximum(0x20);
-    ui->spinBoxODValue->setMaximum(0xFFFFFFFF);
+    ui->spinBoxODValue1->setMaximum(0xFFFF);
+    ui->spinBoxODValue2->setMaximum(0xFFFF);
     ui->spinBoxIndex->setPrefix("0x");
     ui->spinBoxSubIndex->setPrefix("0x");
-    ui->spinBoxODValue->setPrefix("0x");
+    ui->spinBoxODValue1->setPrefix("0x");
+    ui->spinBoxODValue2->setPrefix("0x");
     ui->spinBoxIndex->setDisplayIntegerBase(16);
     ui->spinBoxSubIndex->setDisplayIntegerBase(16);
-    ui->spinBoxODValue->setDisplayIntegerBase(16);
+    ui->spinBoxODValue1->setDisplayIntegerBase(16);
+    ui->spinBoxODValue2->setDisplayIntegerBase(16);
     ui->spinBoxIndex->clear();
     ui->spinBoxSubIndex->clear();
-    ui->spinBoxODValue->clear();
+    ui->spinBoxODValue1->clear();
+    ui->spinBoxODValue2->clear();
+
+    //ui->progressBar->setValue(90);
 }
 
 void MainWindow::on_pushButtonLink_clicked()
@@ -175,12 +216,17 @@ void MainWindow::readFromPort()
       ID_rcv = line[1];
       ID_rcv += line[2];
       ID_rcv += line[3];
-      log.append("ID: ");
-      log.append(ID_rcv);
-      log.append(" Dane: ");
 
-//      bool ok;
-      QString tmp;
+      if(ID_rcv == "588"){
+          SDO_response(line);
+      }
+      else{
+        log.append("<-ID: ");
+        log.append(ID_rcv);
+        log.append(" Dane: ");
+
+//        bool ok;
+         QString tmp;
       for(int i=0; i<8; i++){
 //        tmp = line[5+i*2];
 //        tmp += line[6+i*2];
@@ -189,8 +235,18 @@ void MainWindow::readFromPort()
           log.append(line[6+2*i]);
           log.append(" ");
       }
+      // ODCZYTYWANIE PREDKOSCI************************
+      /*tmp = line[9];
+      tmp += line[10];
+      data_rcv[1] = tmp.toInt(&ok, 16);
+      ui->progressBar->setValue(data_rcv[1]); */
+      // ODCZYTYWANIE PREDKOSCI************************
+
       this->addToLogs(log);
+
+      }
     }
+
 }
 
 void MainWindow::on_pushButtonFilterSet_clicked()
@@ -242,26 +298,89 @@ void MainWindow::on_pushButton_clicked()
 void MainWindow::on_pushButtonSDORead_clicked()
 {
     //wyslij komende na can
-    // ID=0x601 B0=0x40 B1=indexMSB B2=indexLSB B3=subindex B4-B7=0
+    // ID=0x601 B0=0x40 B1=indexLSB B2=indexMSB B3=subindex B4-B7=0
     char msg[24];
     uint16_t index;
-    uint8_t indexM, indexL;
+    uint8_t indexM, indexL, subindex;
+    QString log;
+
     index = ui->spinBoxIndex->value();
     indexM = index >> 8;
-    indexL = index & 0x0f;
-    sprintf(msg, "M601,%02x%02x%02x%02x00000000;",
-            0x40, indexM, indexL, ui->spinBoxSubIndex->value());
+    indexL = index & 0xff;
+    subindex = ui->spinBoxSubIndex->value();
 
-    //this->sendMessageToDevice(msg);
-    //komunikat potwierdzający do logów
-    qDebug() << "Wyslano: " << msg;
-    addToLogs("Wysłano komendę SDO Read");
+    sprintf(msg, "M608,40%02x%02x%02x00000000;", indexL, indexM, subindex);
 
+    this->sendMessageToDevice(msg);
+
+    log.append("SDO Read 0x");
+    log.append(QString::number(index, 16));
+    log.append(" ");
+    log.append(QString::number(subindex, 16));
+    addToLogs(log);
 }
 
 void MainWindow::on_pushButtonSDOWrite_clicked()
 {
+    //wyslij komende na can
+    // ID=0x601 B0=0x40 B1=indexLSB B2=indexMSB B3=subindex B4-B7=wartość OD
+    char msg[24];
+    QString log, q_value;
+    uint16_t index, ODvalue1, ODvalue2;
+    uint8_t indexM, indexL, subindex;
+    uint32_t ODvalue;
+    char DLC;
+    uint8_t valueB0 = 0, valueB1 = 0, valueB2 = 0, valueB3 = 0;
+    valueB0 = 0;
+    valueB1 = 0;
+    valueB2 = 0;
+    valueB3 = 0;
 
+    index = ui->spinBoxIndex->value();
+    indexM = index >> 8;
+    indexL = index & 0xff;
+    subindex = ui->spinBoxSubIndex->value();
+    ODvalue1 = ui->spinBoxODValue1->value();
+    ODvalue2 = ui->spinBoxODValue2->value();
+    ODvalue = (ODvalue1 << 16) | ODvalue2;
+    q_value = QString::number(ODvalue, 16);
+
+    if(ODvalue <= 0xff){
+        valueB0 = ODvalue;
+        DLC = '1';
+    }
+    if((ODvalue > 0xff) && (ODvalue <= 0xffff)){
+        valueB1 = ODvalue >> 8;
+        //qDebug() << valueB1;
+        valueB0 = ODvalue & 0xff;
+        DLC = '2';
+    }
+    if(ODvalue > 0xffff && ODvalue <= 0xffffff){
+        valueB2 = ODvalue >> 16;
+        valueB1 = ODvalue >> 8;
+        valueB0 = ODvalue & 0xff;
+        DLC = '3';
+    }
+    if(ODvalue > 0xffffff){
+        valueB3 = ODvalue >> 24;
+        valueB2 = ODvalue >> 16;
+        valueB1 = ODvalue >> 8;
+        valueB0 = ODvalue & 0xff;
+        DLC = '4';
+    }
+    sprintf(msg, "M608,22%02x%02x%02x%02x%02x%02x%02x;", indexL, indexM, subindex,
+            valueB0, valueB1, valueB2, valueB3);
+
+    this->sendMessageToDevice(msg);
+    //komunikat potwierdzający do logów
+    log.append("SDO Write 0x");
+    log.append(QString::number(index, 16));
+    log.append(" ");
+    log.append(QString::number(subindex, 16));
+    log.append(" =");
+    log.append(q_value);
+    addToLogs(log);
+    addToLogs(msg);
 }
 
 void MainWindow::on_pushButtoOp_clicked()
@@ -284,4 +403,93 @@ void MainWindow::on_pushButtonPreOp_clicked()
 
     this->sendMessageToDevice(msg);
     qDebug() << "Wyslano: " << msg;
+}
+
+void MainWindow::on_pushButtonLogin_clicked()
+{
+    char msg[24];
+    sprintf(msg, "M608,221010014F50454E;");
+    addToLogs(msg);
+    this->sendMessageToDevice(msg);
+}
+
+void MainWindow::on_pushButtonSave_clicked()
+{
+    char msg[24];
+    sprintf(msg, "M608,2210100173617665;");
+    addToLogs(msg);
+    this->sendMessageToDevice(msg);
+}
+
+void MainWindow::SDO_response(QString line)
+{
+    QString log, q_value;
+    QString cmd, index, subindex, value;
+    int icmd, sdo_n, i_value;
+    bool ok;
+    ui->lineEdit->clear();
+
+    cmd += line[5];
+    cmd += line[6];
+    icmd = cmd.toInt(&ok, 16);
+    sdo_n = (icmd & 0x0c) >> 2;
+
+    index = line[9];
+    index += line[10];
+    index += line[7];
+    index += line[8];
+
+    subindex += line[11];
+    subindex += line[12];
+
+    switch(sdo_n){
+    case 0:
+       value = line[19];
+       value += line[20];
+
+       value += line[17];
+       value += line[18];
+
+       value += line[15];
+       value += line[16];
+
+       value += line[13];
+       value += line[14];
+       break;
+     case 1:
+        value = line[17];
+        value += line[18];
+
+        value += line[15];
+        value += line[16];
+
+        value += line[13];
+        value += line[14];
+        break;
+    case 2:
+       value = line[15];
+       value += line[16];
+
+       value += line[13];
+       value += line[14];
+       break;
+    case 3:
+       value = line[13];
+       value += line[14];
+       break;
+    }
+    i_value = value.toInt(&ok, 16);
+    q_value = QString::number(i_value);
+    log.append("OD ");
+    log.append("0x");
+    log.append(index);
+    log.append(" ");
+    log.append(subindex);
+    log.append("  =0x");
+    log.append(value);
+    log.append("  dec=");
+    log.append(q_value);
+
+    ui->lineEdit->setText(value);
+    this->addToLogs(log);
 }

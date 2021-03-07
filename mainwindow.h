@@ -27,16 +27,16 @@ private slots:
     void on_pushButtonSendMsg_clicked();
 
     void on_pushButtonPasmo_clicked();
-
     void on_pushButton_clicked();
-
     void on_pushButtonSDORead_clicked();
-
     void on_pushButtonSDOWrite_clicked();
-
     void on_pushButtoOp_clicked();
-
     void on_pushButtonPreOp_clicked();
+    void on_pushButtonLogin_clicked();
+    void on_pushButtonSave_clicked();
+
+
+    void SDO_response(QString line);
 
 private:
     Ui::MainWindow *ui;

@@ -343,7 +343,7 @@
     <widget class="QPushButton" name="pushButtonSendMsg">
      <property name="geometry">
       <rect>
-       <x>90</x>
+       <x>163</x>
        <y>66</y>
        <width>181</width>
        <height>21</height>
@@ -364,6 +364,29 @@
      </property>
      <property name="text">
       <string>Nie klikaj</string>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="spinBox_DLC">
+     <property name="geometry">
+      <rect>
+       <x>100</x>
+       <y>65</y>
+       <width>41</width>
+       <height>22</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_DLC">
+     <property name="geometry">
+      <rect>
+       <x>74</x>
+       <y>65</y>
+       <width>21</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>DLC</string>
      </property>
     </widget>
    </widget>
@@ -486,7 +509,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>231</y>
+      <y>230</y>
       <width>251</width>
       <height>281</height>
      </rect>
@@ -498,7 +521,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>30</y>
+       <y>250</y>
        <width>80</width>
        <height>21</height>
       </rect>
@@ -511,7 +534,7 @@
      <property name="geometry">
       <rect>
        <x>100</x>
-       <y>30</y>
+       <y>250</y>
        <width>91</width>
        <height>21</height>
       </rect>
@@ -524,7 +547,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>71</y>
+       <y>36</y>
        <width>71</width>
        <height>22</height>
       </rect>
@@ -534,7 +557,7 @@
      <property name="geometry">
       <rect>
        <x>90</x>
-       <y>70</y>
+       <y>36</y>
        <width>51</width>
        <height>22</height>
       </rect>
@@ -543,8 +566,8 @@
     <widget class="QLabel" name="label">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>56</y>
+       <x>30</x>
+       <y>22</y>
        <width>47</width>
        <height>13</height>
       </rect>
@@ -556,48 +579,48 @@
     <widget class="QLabel" name="label_2">
      <property name="geometry">
       <rect>
-       <x>90</x>
-       <y>54</y>
+       <x>92</x>
+       <y>20</y>
        <width>51</width>
        <height>16</height>
       </rect>
      </property>
      <property name="text">
-      <string>Sub-Index</string>
+      <string>Subindex</string>
      </property>
     </widget>
     <widget class="QPushButton" name="pushButtonSDOWrite">
      <property name="geometry">
       <rect>
-       <x>10</x>
+       <x>150</x>
        <y>100</y>
-       <width>71</width>
-       <height>21</height>
+       <width>91</width>
+       <height>31</height>
       </rect>
      </property>
      <property name="text">
-      <string>Zmień SDO</string>
+      <string>Zmień OD</string>
      </property>
     </widget>
     <widget class="QPushButton" name="pushButtonSDORead">
      <property name="geometry">
       <rect>
-       <x>90</x>
-       <y>100</y>
-       <width>80</width>
-       <height>21</height>
+       <x>150</x>
+       <y>63</y>
+       <width>91</width>
+       <height>31</height>
       </rect>
      </property>
      <property name="text">
-      <string>Odczytaj SDO</string>
+      <string>Odczytaj OD</string>
      </property>
     </widget>
-    <widget class="QSpinBox" name="spinBoxODValue">
+    <widget class="QSpinBox" name="spinBoxODValue2">
      <property name="geometry">
       <rect>
-       <x>150</x>
-       <y>70</y>
-       <width>91</width>
+       <x>81</x>
+       <y>80</y>
+       <width>61</width>
        <height>22</height>
       </rect>
      </property>
@@ -605,14 +628,99 @@
     <widget class="QLabel" name="label_3">
      <property name="geometry">
       <rect>
-       <x>151</x>
-       <y>54</y>
+       <x>16</x>
+       <y>59</y>
+       <width>51</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Bajty 2-3</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_4">
+     <property name="geometry">
+      <rect>
+       <x>87</x>
+       <y>61</y>
        <width>51</width>
        <height>16</height>
       </rect>
      </property>
      <property name="text">
-      <string>Wartość</string>
+      <string>Bajty 0-1</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="lineEdit">
+     <property name="geometry">
+      <rect>
+       <x>150</x>
+       <y>37</y>
+       <width>91</width>
+       <height>21</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_13">
+     <property name="geometry">
+      <rect>
+       <x>150</x>
+       <y>17</y>
+       <width>100</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Wartość odczytana</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButtonLogin">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>110</y>
+       <width>41</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Login</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButtonSave">
+     <property name="geometry">
+      <rect>
+       <x>61</x>
+       <y>110</y>
+       <width>81</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Save EEPROM</string>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="spinBoxODValue1">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>80</y>
+       <width>61</width>
+       <height>22</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QProgressBar" name="progressBar">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>220</y>
+       <width>161</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="value">
+      <number>24</number>
      </property>
     </widget>
    </widget>
@@ -624,9 +732,39 @@
   <tabstop>comboBoxDevices</tabstop>
   <tabstop>pushButtonLink</tabstop>
   <tabstop>pushButtonClose</tabstop>
-  <tabstop>textEditLogi</tabstop>
-  <tabstop>pushButton_3</tabstop>
+  <tabstop>comboBoxPasmo</tabstop>
+  <tabstop>pushButtonPasmo</tabstop>
+  <tabstop>spinBox_ID</tabstop>
+  <tabstop>spinBox_B0</tabstop>
+  <tabstop>spinBox_B1</tabstop>
+  <tabstop>spinBox_B2</tabstop>
+  <tabstop>spinBox_B3</tabstop>
+  <tabstop>spinBox_B4</tabstop>
+  <tabstop>spinBox_B5</tabstop>
+  <tabstop>spinBox_B6</tabstop>
+  <tabstop>spinBox_B7</tabstop>
+  <tabstop>spinBox_DLC</tabstop>
   <tabstop>pushButtonSendMsg</tabstop>
+  <tabstop>spinBox_F0</tabstop>
+  <tabstop>spinBox_F1</tabstop>
+  <tabstop>spinBox_F2</tabstop>
+  <tabstop>spinBox_F3</tabstop>
+  <tabstop>pushButtonFilterSet</tabstop>
+  <tabstop>pushButtonFilterOff</tabstop>
+  <tabstop>pushButtoOp</tabstop>
+  <tabstop>pushButtonPreOp</tabstop>
+  <tabstop>spinBoxIndex</tabstop>
+  <tabstop>spinBoxSubIndex</tabstop>
+  <tabstop>spinBoxODValue1</tabstop>
+  <tabstop>spinBoxODValue2</tabstop>
+  <tabstop>pushButtonSDORead</tabstop>
+  <tabstop>pushButtonSDOWrite</tabstop>
+  <tabstop>lineEdit</tabstop>
+  <tabstop>textEditLogi</tabstop>
+  <tabstop>pushButtonLogin</tabstop>
+  <tabstop>pushButtonSave</tabstop>
+  <tabstop>pushButton_3</tabstop>
+  <tabstop>pushButton</tabstop>
  </tabstops>
  <resources/>
  <connections>
