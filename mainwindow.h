@@ -27,7 +27,6 @@ private slots:
     void on_pushButtonSendMsg_clicked();
 
     void on_pushButtonPasmo_clicked();
-    void on_pushButton_clicked();
     void on_pushButtonSDORead_clicked();
     void on_pushButtonSDOWrite_clicked();
     void on_pushButtoOp_clicked();
@@ -37,6 +36,8 @@ private slots:
 
 
     void SDO_response(QString line);
+
+    void on_pushButtonNodeID_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -48,7 +49,10 @@ private:
 
     QString ID_rcv;
     uint8_t data_rcv[8];
-    //uint8_t DLC_rcv;
+    uint8_t Node_ID;
+    uint16_t SDO_Tx_ID;
+    uint16_t SDO_Rx_ID;
+
 
 
 };

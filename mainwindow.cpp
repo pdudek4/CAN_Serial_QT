@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 //#define _msglog
+//#define _time
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -19,6 +20,9 @@ MainWindow::MainWindow(QWidget *parent)
     CANopenui = new CANOpen(this);
     this->device = new QSerialPort(this);
     setUi();
+
+    SDO_Tx_ID = 0x601;
+    SDO_Rx_ID = 0x581;
 }
 
 MainWindow::~MainWindow()
@@ -42,8 +46,18 @@ void MainWindow::on_pushButtonSearch_clicked()
 
 void MainWindow::addToLogs(QString message)
 {
+    QTextCursor cursor = ui->textEditLogi->textCursor();
+    ui->textEditLogi->selectAll();
+    ui->textEditLogi->setFontPointSize(10);
+    ui->textEditLogi->setTextCursor( cursor );
+#ifdef _time
     QString currentDateTime = QTime::currentTime().toString("hh:mm:ss");
     ui->textEditLogi->append(currentDateTime + "   " + message);
+#else
+    ui->textEditLogi->append(message);
+#endif
+
+
 }
 
 void MainWindow::sendMessageToDevice(QString message)
@@ -75,9 +89,6 @@ void MainWindow::setUi()
     ui->spinBox_ID->setPrefix("0x");
     ui->spinBox_ID->setDisplayIntegerBase(16);
     ui->spinBox_ID->clear();
-
-    ui->spinBox_DLC->setMaximum(0x08);
-    ui->spinBox_DLC->clear();
 
     ui->spinBox_B0->setMaximum(255);
     ui->spinBox_B1->setMaximum(255);
@@ -151,6 +162,7 @@ void MainWindow::setUi()
     ui->spinBoxODValue1->clear();
     ui->spinBoxODValue2->clear();
 
+
     //ui->progressBar->setValue(90);
 }
 
@@ -217,11 +229,11 @@ void MainWindow::readFromPort()
       ID_rcv += line[2];
       ID_rcv += line[3];
 
-      if(ID_rcv == "588"){
+      if(ID_rcv == SDO_Rx_ID){
           SDO_response(line);
       }
       else{
-        log.append("<-ID: ");
+        log.append("<---ID: ");
         log.append(ID_rcv);
         log.append(" Dane: ");
 
@@ -257,14 +269,12 @@ void MainWindow::on_pushButtonFilterSet_clicked()
             ui->spinBox_F1->value(), ui->spinBox_F2->value(), ui->spinBox_F3->value());
 
     this->sendMessageToDevice(msg);
-    qDebug() << "Wyslano: " << msg;
 }
 
 void MainWindow::on_pushButtonFilterOff_clicked()
 {
     //wyslij ramke z informacja zeby wylaczyc filtrowanie
     this->sendMessageToDevice("FDEA,123456789123;;;;;");
-    qDebug() << "Wyslano: " << "FDEA,123456789123;;;;;";
 }
 
 void MainWindow::on_pushButtonSendMsg_clicked()
@@ -275,7 +285,6 @@ void MainWindow::on_pushButtonSendMsg_clicked()
             ui->spinBox_B4->value(), ui->spinBox_B5->value(), ui->spinBox_B6->value(), ui->spinBox_B7->value());
 
     this->sendMessageToDevice(msg);
-    qDebug() << "Wyslano: " << msg;
 }
 
 void MainWindow::on_pushButtonPasmo_clicked()
@@ -287,17 +296,11 @@ void MainWindow::on_pushButtonPasmo_clicked()
     msg.append("1234567890123;");
 
     this->sendMessageToDevice(msg);
-    qDebug() << "Wyslano: " << msg;
-}
-
-void MainWindow::on_pushButton_clicked()
-{
-   //CANopenui->show();
 }
 
 void MainWindow::on_pushButtonSDORead_clicked()
 {
-    //wyslij komende na can
+    //Read OD Value
     // ID=0x601 B0=0x40 B1=indexLSB B2=indexMSB B3=subindex B4-B7=0
     char msg[24];
     uint16_t index;
@@ -309,7 +312,7 @@ void MainWindow::on_pushButtonSDORead_clicked()
     indexL = index & 0xff;
     subindex = ui->spinBoxSubIndex->value();
 
-    sprintf(msg, "M608,40%02x%02x%02x00000000;", indexL, indexM, subindex);
+    sprintf(msg, "M%03x,40%02x%02x%02x00000000;", SDO_Tx_ID, indexL, indexM, subindex);
 
     this->sendMessageToDevice(msg);
 
@@ -322,8 +325,8 @@ void MainWindow::on_pushButtonSDORead_clicked()
 
 void MainWindow::on_pushButtonSDOWrite_clicked()
 {
-    //wyslij komende na can
-    // ID=0x601 B0=0x40 B1=indexLSB B2=indexMSB B3=subindex B4-B7=wartość OD
+    //Write OD Value
+    // ID=0x601 B0=0x22 B1=indexLSB B2=indexMSB B3=subindex B4-B7=wartość OD
     char msg[24];
     QString log, q_value;
     uint16_t index, ODvalue1, ODvalue2;
@@ -351,7 +354,6 @@ void MainWindow::on_pushButtonSDOWrite_clicked()
     }
     if((ODvalue > 0xff) && (ODvalue <= 0xffff)){
         valueB1 = ODvalue >> 8;
-        //qDebug() << valueB1;
         valueB0 = ODvalue & 0xff;
         DLC = '2';
     }
@@ -368,7 +370,8 @@ void MainWindow::on_pushButtonSDOWrite_clicked()
         valueB0 = ODvalue & 0xff;
         DLC = '4';
     }
-    sprintf(msg, "M608,22%02x%02x%02x%02x%02x%02x%02x;", indexL, indexM, subindex,
+    //zapi i sevcon działa bez dlc w B0 = 0x22
+    sprintf(msg, "M%03x,22%02x%02x%02x%02x%02x%02x%02x;", SDO_Tx_ID, indexL, indexM, subindex,
             valueB0, valueB1, valueB2, valueB3);
 
     this->sendMessageToDevice(msg);
@@ -380,7 +383,6 @@ void MainWindow::on_pushButtonSDOWrite_clicked()
     log.append(" =");
     log.append(q_value);
     addToLogs(log);
-    addToLogs(msg);
 }
 
 void MainWindow::on_pushButtoOp_clicked()
@@ -391,24 +393,21 @@ void MainWindow::on_pushButtoOp_clicked()
     sprintf(msg, "M000,%02x%02x000000000000;", 0x01, nodeID);
 
     this->sendMessageToDevice(msg);
-    qDebug() << "Wyslano: " << msg;
 }
 
 void MainWindow::on_pushButtonPreOp_clicked()
 {
     //ID=0x000 B0=0x80 (cmd), B1=nodeID
     char msg[24];
-    uint8_t nodeID = 0x01;
-    sprintf(msg, "M000,%02x%02x000000000000;", 0x80, nodeID);
+    sprintf(msg, "M000,%02x%02x000000000000;", 0x80, Node_ID);
 
     this->sendMessageToDevice(msg);
-    qDebug() << "Wyslano: " << msg;
 }
 
 void MainWindow::on_pushButtonLogin_clicked()
 {
     char msg[24];
-    sprintf(msg, "M608,221010014F50454E;");
+    sprintf(msg, "M%03x,221010014F50454E;", SDO_Tx_ID);
     addToLogs(msg);
     this->sendMessageToDevice(msg);
 }
@@ -416,7 +415,7 @@ void MainWindow::on_pushButtonLogin_clicked()
 void MainWindow::on_pushButtonSave_clicked()
 {
     char msg[24];
-    sprintf(msg, "M608,2210100173617665;");
+    sprintf(msg, "M%03x,2210100173617665;", SDO_Tx_ID);
     addToLogs(msg);
     this->sendMessageToDevice(msg);
 }
@@ -480,6 +479,7 @@ void MainWindow::SDO_response(QString line)
     }
     i_value = value.toInt(&ok, 16);
     q_value = QString::number(i_value);
+    this->addToLogs("****************");
     log.append("OD ");
     log.append("0x");
     log.append(index);
@@ -492,4 +492,12 @@ void MainWindow::SDO_response(QString line)
 
     ui->lineEdit->setText(value);
     this->addToLogs(log);
+    this->addToLogs("****************");
+}
+
+void MainWindow::on_pushButtonNodeID_clicked()
+{
+    Node_ID = ui->comboBoxNodeID->currentText().toInt();
+    SDO_Tx_ID = 0x600 + Node_ID;
+    SDO_Rx_ID = 0x580 + Node_ID;
 }
