@@ -23,6 +23,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     SDO_Tx_ID = 0x601;
     SDO_Rx_ID = 0x581;
+
 }
 
 MainWindow::~MainWindow()
@@ -225,11 +226,12 @@ void MainWindow::readFromPort()
       QString line = this->device->readLine();
 
       QString log;
+      bool ok;
       ID_rcv = line[1];
       ID_rcv += line[2];
       ID_rcv += line[3];
 
-      if(ID_rcv == SDO_Rx_ID){
+      if(ID_rcv.toInt(&ok, 16) == SDO_Rx_ID){
           SDO_response(line);
       }
       else{
@@ -385,25 +387,6 @@ void MainWindow::on_pushButtonSDOWrite_clicked()
     addToLogs(log);
 }
 
-void MainWindow::on_pushButtoOp_clicked()
-{
-    //ID=0x000 B0=0x01 (cmd), B1=nodeID
-    char msg[24];
-    uint8_t nodeID = 0x01;
-    sprintf(msg, "M000,%02x%02x000000000000;", 0x01, nodeID);
-
-    this->sendMessageToDevice(msg);
-}
-
-void MainWindow::on_pushButtonPreOp_clicked()
-{
-    //ID=0x000 B0=0x80 (cmd), B1=nodeID
-    char msg[24];
-    sprintf(msg, "M000,%02x%02x000000000000;", 0x80, Node_ID);
-
-    this->sendMessageToDevice(msg);
-}
-
 void MainWindow::on_pushButtonLogin_clicked()
 {
     char msg[24];
@@ -500,4 +483,93 @@ void MainWindow::on_pushButtonNodeID_clicked()
     Node_ID = ui->comboBoxNodeID->currentText().toInt();
     SDO_Tx_ID = 0x600 + Node_ID;
     SDO_Rx_ID = 0x580 + Node_ID;
+}
+
+void MainWindow::on_pushButtonLoginSevcon_clicked()
+{
+    //login set
+    // 0x5000, 3, =0  -> user id=0
+    // 0x5000, 2, =0x4bdf  -> password
+    //login level check 0x5000, 1, 4=Engineering, 1=User
+    char msg[24];
+    //OD read state login level
+    sprintf(msg, "M%03x,4000500100000000;", SDO_Tx_ID);
+    this->sendMessageToDevice(msg);
+
+    QString OD_value = ui->lineEdit->text();
+    if(OD_value != "04"){
+        qDebug() << "Login level = " + OD_value;
+        //user id=0
+        sprintf(msg, "M%03x,2200500300000000;", SDO_Tx_ID);
+        this->sendMessageToDevice(msg);
+        Sleep(500);
+        //login password
+        sprintf(msg, "M%03x,22005002df4b0000;", SDO_Tx_ID);
+        this->sendMessageToDevice(msg);
+    }
+    Sleep(500);
+    //OD read, sprawdzenie zmiany login level
+    sprintf(msg, "M%03x,4000500100000000;", SDO_Tx_ID);
+    this->sendMessageToDevice(msg);
+
+    OD_value = ui->lineEdit->text();
+    qDebug() << "Check login level = " + OD_value;
+    if(OD_value == "04") ui->checkBoxLogin->setChecked(1);
+}
+
+void MainWindow::on_pushButtonSaveSevcon_clicked()
+{
+    char msg[24];
+    //OD write save parameters
+    sprintf(msg, "M%03x,2210100173617665;", SDO_Tx_ID);
+    this->sendMessageToDevice(msg);
+}
+
+void MainWindow::on_pushButtoOpSevcon_clicked()
+{
+    //op set 0x2800, 0, =0
+    //op check 0x5110, 0, =5
+    char msg[24];
+    //OD read state
+    sprintf(msg, "M%03x,4010510000000000;", SDO_Tx_ID);
+    this->sendMessageToDevice(msg);
+
+    QString OD_value = ui->lineEdit->text();
+    if(OD_value != "05"){
+         qDebug() << "SEVCON state = " + OD_value;
+        sprintf(msg, "M%03x,2200280000000000;", SDO_Tx_ID);
+        this->sendMessageToDevice(msg);
+    }
+    Sleep(500);
+    //OD read, sprawdzenie zmiany
+    sprintf(msg, "M%03x,4010510000000000;", SDO_Tx_ID);
+    this->sendMessageToDevice(msg);
+
+    OD_value = ui->lineEdit->text();
+    if(OD_value == "05") ui->checkBoxPreop->setChecked(0);
+}
+
+void MainWindow::on_pushButtonPreOpSevcon_clicked()
+{
+    //pre-op set 0x2800, 0, =1
+    //pre-op check 0x5110, 0, =127 or 0x7f
+    char msg[24];
+    //OD read state
+    sprintf(msg, "M%03x,4010510000000000;", SDO_Tx_ID);
+    this->sendMessageToDevice(msg);
+
+    QString OD_value = ui->lineEdit->text();
+    if(OD_value != "7f"){
+        qDebug() << "SEVCON state = " + OD_value;
+        sprintf(msg, "M%03x,2200280001000000;", SDO_Tx_ID);
+        this->sendMessageToDevice(msg);
+    }
+    else //pokaz
+    Sleep(500);
+    //OD read, sprawdzenie zmiany
+    sprintf(msg, "M%03x,4010510000000000;", SDO_Tx_ID);
+    this->sendMessageToDevice(msg);
+
+    OD_value = ui->lineEdit->text();
+    if(OD_value == "7f") ui->checkBoxPreop->setChecked(1);
 }

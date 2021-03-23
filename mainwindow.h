@@ -29,8 +29,6 @@ private slots:
     void on_pushButtonPasmo_clicked();
     void on_pushButtonSDORead_clicked();
     void on_pushButtonSDOWrite_clicked();
-    void on_pushButtoOp_clicked();
-    void on_pushButtonPreOp_clicked();
     void on_pushButtonLogin_clicked();
     void on_pushButtonSave_clicked();
 
@@ -38,6 +36,14 @@ private slots:
     void SDO_response(QString line);
 
     void on_pushButtonNodeID_clicked();
+
+    void on_pushButtoOpSevcon_clicked();
+
+    void on_pushButtonLoginSevcon_clicked();
+
+    void on_pushButtonSaveSevcon_clicked();
+
+    void on_pushButtonPreOpSevcon_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -52,6 +58,7 @@ private:
     uint8_t Node_ID;
     uint16_t SDO_Tx_ID;
     uint16_t SDO_Rx_ID;
+    enum Op_state {preop, op};
 
 
 
