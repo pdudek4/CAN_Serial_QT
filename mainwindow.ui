@@ -779,7 +779,7 @@
      <rect>
       <x>10</x>
       <y>480</y>
-      <width>80</width>
+      <width>71</width>
       <height>21</height>
      </rect>
     </property>
@@ -790,14 +790,14 @@
    <widget class="QPushButton" name="pushButtonPreOpSevcon">
     <property name="geometry">
      <rect>
-      <x>100</x>
+      <x>140</x>
       <y>480</y>
-      <width>91</width>
+      <width>51</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
-     <string>Pre-operational</string>
+     <string>Pre-op</string>
     </property>
    </widget>
    <widget class="QPushButton" name="pushButtonLoginSevcon">
@@ -816,7 +816,7 @@
    <widget class="QPushButton" name="pushButtonSaveSevcon">
     <property name="geometry">
      <rect>
-      <x>60</x>
+      <x>100</x>
       <y>450</y>
       <width>81</width>
       <height>21</height>
@@ -850,6 +850,32 @@
     </property>
     <property name="text">
      <string>Logged in</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButtonLogSCheck">
+    <property name="geometry">
+     <rect>
+      <x>55</x>
+      <y>450</y>
+      <width>41</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Check</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButtonOpSCheck">
+    <property name="geometry">
+     <rect>
+      <x>90</x>
+      <y>480</y>
+      <width>41</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Check</string>
     </property>
    </widget>
   </widget>

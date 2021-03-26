@@ -45,6 +45,10 @@ private slots:
 
     void on_pushButtonPreOpSevcon_clicked();
 
+    void on_pushButtonLogSCheck_clicked();
+
+    void on_pushButtonOpSCheck_clicked();
+
 private:
     Ui::MainWindow *ui;
     CANOpen *CANopenui;
