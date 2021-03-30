@@ -218,44 +218,43 @@ void MainWindow::on_pushButtonClose_clicked()
 
 void MainWindow::readFromPort()
 {
-    while(this->device->canReadLine()){
-      QString line = this->device->readLine();
+    const QByteArray data = this->device->readAll();
+    QString line = QString(data);
+//qDebug() << line;
 
-      QString log;
-      bool ok;
-      ID_rcv = line[1];
-      ID_rcv += line[2];
-      ID_rcv += line[3];
+    QString log, tmp;
+    bool ok;
+    ID_rcv = line[1];
+    ID_rcv += line[2];
+    ID_rcv += line[3];
 
-      if(ID_rcv.toInt(&ok, 16) == SDO_Rx_ID){
-          SDO_response(line);
-      }
-      else{
-        log.append("<-ID: ");
-        log.append(ID_rcv);
-        log.append(" Dane: ");
+    log.append("<-ID: ");
+    log.append(ID_rcv);
+    log.append(" Dane: ");
 
-//        bool ok;
-         QString tmp;
-      for(int i=0; i<8; i++){
-//        tmp = line[5+i*2];
-//        tmp += line[6+i*2];
-//        data_rcv[i] = tmp.toInt(&ok, 16);
-          log.append(line[5+2*i]);
-          log.append(line[6+2*i]);
-          log.append(" ");
-      }
-      // ODCZYTYWANIE PREDKOSCI************************
-      /*tmp = line[9];
-      tmp += line[10];
-      data_rcv[1] = tmp.toInt(&ok, 16);
-      ui->progressBar->setValue(data_rcv[1]); */
-      // ODCZYTYWANIE PREDKOSCI************************
 
-      this->addToLogs(log);
-
-      }
+    for(int i=0; i<8; i++){
+//      tmp = line[5+i*2];
+//      tmp += line[6+i*2];
+//      data_rcv[i] = tmp.toInt(&ok, 16);
+        log.append(line[5+2*i]);
+        log.append(line[6+2*i]);
+        log.append(" ");
     }
+    // ODCZYTYWANIE PREDKOSCI************************
+    /*tmp = line[9];
+    tmp += line[10];
+    data_rcv[1] = tmp.toInt(&ok, 16);
+    ui->progressBar->setValue(data_rcv[1]); */
+    // ODCZYTYWANIE PREDKOSCI************************
+
+    this->addToLogs(log);
+
+    if(ID_rcv.toInt(&ok, 16) == SDO_Rx_ID){
+        SDO_response(line);
+        qDebug() << "sdo response";
+    }
+    else addToLogs("");
 
 }
 
@@ -465,7 +464,7 @@ void MainWindow::SDO_response(QString line)
     i_value = value.toInt(&ok, 16);
     s_value = QString::number(i_value);
 
-    log.append("\tOdp 0x");
+    log.append("   Odp 0x");
     log.append(index);
     log.append(" ");
     log.append(subindex);
@@ -475,13 +474,17 @@ void MainWindow::SDO_response(QString line)
     log.append(s_value);
 
     ui->lineEdit->setText(value);
-    this->addToLogs(log);
-    this->addToLogs("\n");
-
+    this->addToLogs(log + "\r\n");
 
     if(index == "5000"){
-        if(value == "04") ui->checkBoxLogin->setChecked(1);
-        else ui->checkBoxLogin->setChecked(0);
+        if(value == "04") {
+            ui->checkBoxLogin->setChecked(1);
+            addToLogs("Login level Enginnering");
+        }
+        else{
+            ui->checkBoxLogin->setChecked(0);
+            addToLogs("Login level looser");
+        }
     }
     if(index == "5110"){ //SEVCON operational
         if(value == "7f") ui->checkBoxPreop->setChecked(1);
@@ -519,6 +522,8 @@ void MainWindow::on_pushButtonLoginSevcon_clicked()
 
     //login password
     sprintf(msg, "M%03x,22005002df4b0000;", SDO_Tx_ID);
+
+    addToLogs("Login");
     this->sendMessageToDevice(msg);
 
 }
@@ -528,6 +533,8 @@ void MainWindow::on_pushButtonSaveSevcon_clicked()
     char msg[24];
     //OD write save parameters
     sprintf(msg, "M%03x,2210100173617665;", SDO_Tx_ID);
+
+    addToLogs("Save EEPROM");
     this->sendMessageToDevice(msg);
 }
 
@@ -537,6 +544,8 @@ void MainWindow::on_pushButtoOpSevcon_clicked()
     //op check 0x5110, 0, =5
     char msg[24];
     sprintf(msg, "M%03x,2200280000000000;", SDO_Tx_ID);
+
+    addToLogs("Change to operational");
     this->sendMessageToDevice(msg);
 }
 
@@ -546,6 +555,8 @@ void MainWindow::on_pushButtonPreOpSevcon_clicked()
     //pre-op check 0x5110, 0, =127 or 0x7f
     char msg[24];
     sprintf(msg, "M%03x,2200280001000000;", SDO_Tx_ID);
+
+    addToLogs("Change to pre-op");
     this->sendMessageToDevice(msg);
 }
 
@@ -554,6 +565,8 @@ void MainWindow::on_pushButtonLogSCheck_clicked()
     char msg[24];
     //OD read state login level
     sprintf(msg, "M%03x,4000500100000000;", SDO_Tx_ID);
+
+    addToLogs("Check login level");
     this->sendMessageToDevice(msg);
 }
 
@@ -562,5 +575,7 @@ void MainWindow::on_pushButtonOpSCheck_clicked()
     char msg[24];
     //OD read operational state
     sprintf(msg, "M%03x,4010510000000000;", SDO_Tx_ID);
+
+    addToLogs("Check state");
     this->sendMessageToDevice(msg);
 }
