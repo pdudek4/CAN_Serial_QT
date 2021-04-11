@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include "canopen.h"
+#include "serialport.h"
 #include <QMainWindow>
 #include <QSerialPort>
 
@@ -40,12 +41,14 @@ private slots:
     void on_pushButtonPreOpSevcon_clicked();
     void on_pushButtonLogSCheck_clicked();
     void on_pushButtonOpSCheck_clicked();
-    void on_comboBoxNodeID_currentIndexChanged(int index);
+    void on_comboBoxNodeID_currentIndexChanged();
 
 private:
     Ui::MainWindow *ui;
-    CANOpen *CANopenui;
     QSerialPort *device;
+    CANOpen *secondwindow;
+    SerialPort nowyserial;
+
     void addToLogs(QString message);
     void sendMessageToDevice(QString message);
     void setUi(void);

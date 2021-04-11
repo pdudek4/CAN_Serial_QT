@@ -14,3 +14,8 @@ CANOpen::~CANOpen()
     delete ui;
 }
 
+
+void CANOpen::on_pushButtonOp_clicked()
+{
+    serial_second->SendMessageToDevice("hello");
+}

@@ -16,9 +16,12 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    this->setWindowTitle("LEM CANopen coronavirusless dialog software");
-    CANopenui = new CANOpen(this);
+    this->setWindowTitle("LEM CANopen Magic software");
+    secondwindow = new CANOpen(this);
     this->device = new QSerialPort(this);
+
+    secondwindow->serial_second = &nowyserial;
+
     setUi();
 
     SDO_Tx_ID = 0x601;
@@ -29,20 +32,128 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete device;
-    delete CANopenui;
     delete ui;
 }
 
 void MainWindow::on_pushButtonSearch_clicked()
 {
+//    this->addToLogs("Szukam urządzeń...");
+//    QList<QSerialPortInfo> devices;
+//    devices = QSerialPortInfo::availablePorts();
+
+//    for(int i = 0; i < devices.count(); i++) {
+//      this->addToLogs("Znalazłem urządzenie: " + devices.at(i).portName() + " " + devices.at(i).description());
+//      ui->comboBoxDevices->addItem(devices.at(i).portName() + " " + devices.at(i).description());
+//    }
+
     this->addToLogs("Szukam urządzeń...");
     QList<QSerialPortInfo> devices;
-    devices = QSerialPortInfo::availablePorts();
+    devices = nowyserial.Search();
 
     for(int i = 0; i < devices.count(); i++) {
       this->addToLogs("Znalazłem urządzenie: " + devices.at(i).portName() + " " + devices.at(i).description());
       ui->comboBoxDevices->addItem(devices.at(i).portName() + " " + devices.at(i).description());
     }
+}
+
+void MainWindow::on_pushButtonLink_clicked()
+{
+//    if(ui->comboBoxDevices->count() == 0)
+//    {
+//        this->addToLogs("Nie wykryto żadnych urządzeń!");
+//        return;
+//    }
+
+//    QString comboBoxQString = ui->comboBoxDevices->currentText();
+//    QStringList portList = comboBoxQString.split(0x20);
+//    QString portName = portList.first();
+
+//    this->device->setPortName(portName);
+
+//    // OTWÓRZ I SKONFIGURUJ PORT:
+//    if(!device->isOpen())
+//    {
+
+//        if(device->open(QSerialPort::ReadWrite))
+//        {
+//            this->device->setBaudRate(QSerialPort::Baud115200);
+//            this->device->setDataBits(QSerialPort::Data8);
+//            this->device->setParity(QSerialPort::NoParity);
+//            this->device->setStopBits(QSerialPort::OneStop);
+//            this->device->setFlowControl(QSerialPort::NoFlowControl);
+//            // CONNECT:
+//            connect(this->device, SIGNAL(readyRead()), this, SLOT(readFromPort()));
+//            this->addToLogs("Otwarto port szeregowy.");
+//        }
+//        else
+//        {
+//            this->addToLogs("Otwarcie portu szeregowego się nie powiodło!");
+//        }
+//    }
+//    else
+//    {
+//        this->addToLogs("Port już jest otwarty!");
+//        return;
+//    }
+
+    if(ui->comboBoxDevices->count() == 0)
+    {
+        this->addToLogs("Nie wykryto żadnych urządzeń!");
+        return;
+    }
+
+    QString comboBoxQString = ui->comboBoxDevices->currentText();
+    QStringList portList = comboBoxQString.split(0x20);
+    QString portName = portList.first();
+
+    //this->device->setPortName(portName);
+    nowyserial.device.setPortName(portName);
+    // OTWÓRZ I SKONFIGURUJ PORT:
+    int nr = nowyserial.Link();
+    switch(nr){
+    case 1:
+        this->addToLogs("Otwarto port szeregowy.");
+        break;
+    case 2:
+        this->addToLogs("Otwarcie portu szeregowego się nie powiodło!");
+        break;
+    case 3:
+        this->addToLogs("Port już jest otwarty!");
+        break;
+    }
+}
+
+void MainWindow::on_pushButtonClose_clicked()
+{
+    if(nowyserial.device.isOpen()) {
+      nowyserial.device.close();
+      this->addToLogs("Zamknięto połączenie.");
+    }
+    else {
+      this->addToLogs("Port nie jest otwarty!");
+      return;
+    }
+}
+
+void MainWindow::sendMessageToDevice(QString message)
+{
+    QString canFrame;
+
+   int nr = nowyserial.SendMessageToDevice(message);
+   if(nr == 1){
+        canFrame = "->ID: " + message[1] + message[2] + message[3] +
+                " Dane: " + message[5] + message[6] + " " +
+                message[7] + message[8] + " " + message[9] + message[10] + " " +
+                message[11] + message[12] + " " + message[13] + message[14] + " " +
+                message[15] + message[16] + " " + message[17] + message[18] + " " +
+                message[19] + message[20];
+        addToLogs(canFrame);
+   }
+   else this->addToLogs("Nie mogę wysłać wiadomości. Port nie jest otwarty!");
+
+#ifdef _msglog
+    this->addToLogs("Wysyłam do STM: " + message);
+#endif
 }
 
 void MainWindow::addToLogs(QString message)
@@ -55,29 +166,6 @@ void MainWindow::addToLogs(QString message)
 #endif
 
 
-}
-
-void MainWindow::sendMessageToDevice(QString message)
-{
-    QString canFrame;
-    if(this->device->isOpen() && this->device->isWritable()) {
-
-        canFrame = "->ID: " + message[1] + message[2] + message[3] +
-                " Dane: " + message[5] + message[6] + " " +
-                message[7] + message[8] + " " + message[9] + message[10] + " " +
-                message[11] + message[12] + " " + message[13] + message[14] + " " +
-                message[15] + message[16] + " " + message[17] + message[18] + " " +
-                message[19] + message[20];
-        addToLogs(canFrame);
-
-        this->device->write(message.toStdString().c_str());
-    }
-    else {
-        this->addToLogs("Nie mogę wysłać wiadomości. Port nie jest otwarty!");
-    }
-#ifdef _msglog
-    this->addToLogs("Wysyłam do STM: " + message);
-#endif
 }
 
 void MainWindow::setUi()
@@ -170,59 +258,6 @@ void MainWindow::CanSendMsg(uint16_t ID, uint8_t *tab)
             tab[0], tab[1], tab[2], tab[3], tab[4], tab[5], tab[6], tab[7]);
     addToLogs(msg);
     this->sendMessageToDevice(msg);
-}
-
-void MainWindow::on_pushButtonLink_clicked()
-{
-    if(ui->comboBoxDevices->count() == 0)
-    {
-        this->addToLogs("Nie wykryto żadnych urządzeń!");
-        return;
-    }
-
-    QString comboBoxQString = ui->comboBoxDevices->currentText();
-    QStringList portList = comboBoxQString.split(0x20);
-    QString portName = portList.first();
-
-    this->device->setPortName(portName);
-
-    // OTWÓRZ I SKONFIGURUJ PORT:
-    if(!device->isOpen())
-    {
-
-        if(device->open(QSerialPort::ReadWrite))
-        {
-            this->device->setBaudRate(QSerialPort::Baud115200);
-            this->device->setDataBits(QSerialPort::Data8);
-            this->device->setParity(QSerialPort::NoParity);
-            this->device->setStopBits(QSerialPort::OneStop);
-            this->device->setFlowControl(QSerialPort::NoFlowControl);
-            // CONNECT:
-            connect(this->device, SIGNAL(readyRead()),this, SLOT(readFromPort()));
-            this->addToLogs("Otwarto port szeregowy.");
-        }
-        else
-        {
-            this->addToLogs("Otwarcie portu szeregowego się nie powiodło!");
-        }
-    }
-    else
-    {
-        this->addToLogs("Port już jest otwarty!");
-        return;
-    }
-}
-
-void MainWindow::on_pushButtonClose_clicked()
-{
-    if(this->device->isOpen()) {
-      this->device->close();
-      this->addToLogs("Zamknięto połączenie.");
-    }
-    else {
-      this->addToLogs("Port nie jest otwarty!");
-      return;
-    }
 }
 
 void MainWindow::readFromPort()
@@ -569,7 +604,7 @@ void MainWindow::on_pushButtonOpSCheck_clicked()
     this->sendMessageToDevice(msg);
 }
 
-void MainWindow::on_comboBoxNodeID_currentIndexChanged(int index)
+void MainWindow::on_comboBoxNodeID_currentIndexChanged()
 {
     Node_ID = ui->comboBoxNodeID->currentText().toInt();
     SDO_Tx_ID = 0x600 + Node_ID;

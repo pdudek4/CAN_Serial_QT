@@ -4,6 +4,8 @@
 #include <QDialog>
 #include <QDebug>
 
+#include "serialport.h"
+
 namespace Ui {
 class CANOpen;
 }
@@ -16,8 +18,12 @@ public:
     explicit CANOpen(QWidget *parent = nullptr);
     ~CANOpen();
 
+    SerialPort *serial_second;
+
 private slots:
 
+
+    void on_pushButtonOp_clicked();
 
 private:
     Ui::CANOpen *ui;
