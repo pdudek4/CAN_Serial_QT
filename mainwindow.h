@@ -34,20 +34,13 @@ private slots:
 
 
     void SDO_response(QString line);
-
-    void on_pushButtonNodeID_clicked();
-
     void on_pushButtoOpSevcon_clicked();
-
     void on_pushButtonLoginSevcon_clicked();
-
     void on_pushButtonSaveSevcon_clicked();
-
     void on_pushButtonPreOpSevcon_clicked();
-
     void on_pushButtonLogSCheck_clicked();
-
     void on_pushButtonOpSCheck_clicked();
+    void on_comboBoxNodeID_currentIndexChanged(int index);
 
 private:
     Ui::MainWindow *ui;
@@ -56,6 +49,7 @@ private:
     void addToLogs(QString message);
     void sendMessageToDevice(QString message);
     void setUi(void);
+    void CanSendMsg(uint16_t ID, uint8_t *tab);
 
     QString ID_rcv;
     uint8_t data_rcv[8];

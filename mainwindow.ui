@@ -468,19 +468,6 @@
       <string>Ustaw</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="pushButtonNodeID">
-     <property name="geometry">
-      <rect>
-       <x>120</x>
-       <y>50</y>
-       <width>61</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Zapisz</string>
-     </property>
-    </widget>
     <widget class="QLabel" name="label_B0_2">
      <property name="geometry">
       <rect>

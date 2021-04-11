@@ -163,6 +163,15 @@ void MainWindow::setUi()
     //ui->progressBar->setValue(90);
 }
 
+void MainWindow::CanSendMsg(uint16_t ID, uint8_t *tab)
+{
+    char msg[24];
+    sprintf(msg, "M%03x,%02x%02x%02x%02x%02x%02x%02x%02x;", ID,
+            tab[0], tab[1], tab[2], tab[3], tab[4], tab[5], tab[6], tab[7]);
+    addToLogs(msg);
+    this->sendMessageToDevice(msg);
+}
+
 void MainWindow::on_pushButtonLink_clicked()
 {
     if(ui->comboBoxDevices->count() == 0)
@@ -390,10 +399,12 @@ void MainWindow::on_pushButtonSDOWrite_clicked()
 
 void MainWindow::on_pushButtonLogin_clicked()
 {
-    char msg[24];
-    sprintf(msg, "M%03x,221010014F50454E;", SDO_Tx_ID);
-    addToLogs(msg);
-    this->sendMessageToDevice(msg);
+    uint8_t dane[8] = {0x22, 0x10, 0x10, 0x01, 0x4F, 0x50, 0x45, 0x4E};
+    CanSendMsg(SDO_Tx_ID, dane);
+    //char msg[24];
+    //sprintf(msg, "M%03x,221010014F50454E;", SDO_Tx_ID);
+    //addToLogs(msg);
+    //this->sendMessageToDevice(msg);
 }
 
 void MainWindow::on_pushButtonSave_clicked()
@@ -476,7 +487,7 @@ void MainWindow::SDO_response(QString line)
 
     ui->lineEdit->setText(value);
     this->addToLogs(log);
-    this->addToLogs("\n");
+    this->addToLogs("");
 
 
     if(index == "5000"){
@@ -489,13 +500,6 @@ void MainWindow::SDO_response(QString line)
     }
 
 
-}
-
-void MainWindow::on_pushButtonNodeID_clicked()
-{
-    Node_ID = ui->comboBoxNodeID->currentText().toInt();
-    SDO_Tx_ID = 0x600 + Node_ID;
-    SDO_Rx_ID = 0x580 + Node_ID;
 }
 
 void MainWindow::on_pushButtonLoginSevcon_clicked()
@@ -563,4 +567,11 @@ void MainWindow::on_pushButtonOpSCheck_clicked()
     //OD read operational state
     sprintf(msg, "M%03x,4010510000000000;", SDO_Tx_ID);
     this->sendMessageToDevice(msg);
+}
+
+void MainWindow::on_comboBoxNodeID_currentIndexChanged(int index)
+{
+    Node_ID = ui->comboBoxNodeID->currentText().toInt();
+    SDO_Tx_ID = 0x600 + Node_ID;
+    SDO_Rx_ID = 0x580 + Node_ID;
 }
