@@ -865,6 +865,19 @@
      <string>Check</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="pushButtonTPDO">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>520</y>
+      <width>80</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>TPDO</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>

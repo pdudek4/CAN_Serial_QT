@@ -20,7 +20,6 @@ int SerialPort::Link()
     // OTWÓRZ I SKONFIGURUJ PORT:
     if(!device.isOpen())
     {
-
         if(device.open(QSerialPort::ReadWrite))
         {
             this->device.setBaudRate(QSerialPort::Baud115200);
@@ -28,8 +27,6 @@ int SerialPort::Link()
             this->device.setParity(QSerialPort::NoParity);
             this->device.setStopBits(QSerialPort::OneStop);
             this->device.setFlowControl(QSerialPort::NoFlowControl);
-            // CONNECT:
-            connect(&device, SIGNAL(readyRead()), this, SLOT(ReadFromPort()));
             return 1;
            // this->addToLogs("Otwarto port szeregowy.");
         }
@@ -46,19 +43,21 @@ int SerialPort::Link()
     }
 }
 
-void SerialPort::ReadFromPort()
-{
-
-}
-
-int SerialPort::SendMessageToDevice(QString message)
+int SerialPort::sendMessageToDevice(QString message)
 {
     if(device.isOpen() && device.isWritable()) {
         device.write(message.toStdString().c_str());
+        qDebug() << "wyslano: " + message;
         return 1;
     }
     else {
+        qDebug() << "nie udalo sie wyslac";
         return 2;
     }
 
 }
+
+//void SerialPort::ready1(){
+
+//    qDebug() << "Wywolano serialpoet ready";
+//}

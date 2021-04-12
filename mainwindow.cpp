@@ -18,11 +18,13 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     this->setWindowTitle("LEM CANopen Magic software");
     secondwindow = new CANOpen(this);
-    this->device = new QSerialPort(this);
+    //this->device = new QSerialPort(this);
 
     secondwindow->serial_second = &nowyserial;
+    //nowyserial.canOpenWin = secondwindow;
 
     setUi();
+
 
     SDO_Tx_ID = 0x601;
     SDO_Rx_ID = 0x581;
@@ -31,7 +33,8 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    delete device;
+    //delete device;
+    delete secondwindow;
     delete ui;
 }
 
@@ -112,6 +115,9 @@ void MainWindow::on_pushButtonLink_clicked()
     int nr = nowyserial.Link();
     switch(nr){
     case 1:
+        // CONNECT:
+        //connect(this->device, SIGNAL(readyRead()),this, SLOT(readFromPort()));
+        connect(&nowyserial.device, SIGNAL(readyRead()), this, SLOT(readFromPort()));
         this->addToLogs("Otwarto port szeregowy.");
         break;
     case 2:
@@ -131,15 +137,16 @@ void MainWindow::on_pushButtonClose_clicked()
     }
     else {
       this->addToLogs("Port nie jest otwarty!");
+        emit nowyserial.ready1();
       return;
     }
 }
 
 void MainWindow::sendMessageToDevice(QString message)
 {
-    QString canFrame;
+   QString canFrame;
 
-   int nr = nowyserial.SendMessageToDevice(message);
+   int nr = nowyserial.sendMessageToDevice(message);
    if(nr == 1){
         canFrame = "->ID: " + message[1] + message[2] + message[3] +
                 " Dane: " + message[5] + message[6] + " " +
@@ -152,7 +159,7 @@ void MainWindow::sendMessageToDevice(QString message)
    else this->addToLogs("Nie mogę wysłać wiadomości. Port nie jest otwarty!");
 
 #ifdef _msglog
-    this->addToLogs("Wysyłam do STM: " + message);
+    this->addToLogs("Wysyłano do STM: " + message);
 #endif
 }
 
@@ -262,9 +269,10 @@ void MainWindow::CanSendMsg(uint16_t ID, uint8_t *tab)
 
 void MainWindow::readFromPort()
 {
-    while(this->device->canReadLine()){
-      QString line = this->device->readLine();
-
+    qDebug() << "readFromPort";
+    while(nowyserial.device.canReadLine()){
+      QString line = nowyserial.device.readLine();
+qDebug() << "readFromPort while";
       QString log;
       bool ok;
       ID_rcv = line[1];
@@ -273,6 +281,7 @@ void MainWindow::readFromPort()
 
       if(ID_rcv.toInt(&ok, 16) == SDO_Rx_ID){
           SDO_response(line);
+          qDebug() << "readFromPor sdo rspons";
       }
       else{
         log.append("<-ID: ");
@@ -454,7 +463,7 @@ void MainWindow::SDO_response(QString line)
 {
     QString log, s_value;
     QString cmd, index, subindex, value;
-    int icmd, sdo_n, i_value;
+    unsigned int icmd, sdo_n, i_value, i_index, i_subindex;
     bool ok;
     ui->lineEdit->clear();
 
@@ -520,18 +529,24 @@ void MainWindow::SDO_response(QString line)
     log.append("  dec=");
     log.append(s_value);
 
-    ui->lineEdit->setText(value);
+    ui->lineEdit->setText("0x" + value);
     this->addToLogs(log);
     this->addToLogs("");
 
+    i_index = index.toUInt(&ok, 16);
+    i_subindex = subindex.toUInt(&ok, 16);
+   qDebug() << "index: " << i_index << " subindex: " << i_subindex;
 
     if(index == "5000"){
         if(value == "04") ui->checkBoxLogin->setChecked(1);
         else ui->checkBoxLogin->setChecked(0);
     }
-    if(index == "5110"){ //SEVCON operational
+    else if(index == "5110"){ //SEVCON operational
         if(value == "7f") ui->checkBoxPreop->setChecked(1);
         else ui->checkBoxPreop->setChecked(0);
+    }
+    else if(i_index >= 0x1A00 && i_index <= 0x1A04){
+        secondwindow->addValueToTree(i_index, i_subindex, value);
     }
 
 
@@ -549,7 +564,7 @@ void MainWindow::on_pushButtonLoginSevcon_clicked()
     sprintf(msg, "M%03x,2200500300000000;", SDO_Tx_ID);
     this->sendMessageToDevice(msg);
 
-    int g=0;
+    volatile int g=0;
     for(int i=0; i<0xFFFF; i++){
         for(int j=0; j<0xFFF; j++){
         g++;
@@ -604,9 +619,14 @@ void MainWindow::on_pushButtonOpSCheck_clicked()
     this->sendMessageToDevice(msg);
 }
 
-void MainWindow::on_comboBoxNodeID_currentIndexChanged()
+void MainWindow::on_comboBoxNodeID_currentIndexChanged(int index)
 {
     Node_ID = ui->comboBoxNodeID->currentText().toInt();
-    SDO_Tx_ID = 0x600 + Node_ID;
-    SDO_Rx_ID = 0x580 + Node_ID;
+    SDO_Tx_ID = 0x600 + index + 1;
+    SDO_Rx_ID = 0x580 + index + 1;
+}
+
+void MainWindow::on_pushButtonTPDO_clicked()
+{
+    secondwindow->show();
 }

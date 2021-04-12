@@ -41,11 +41,13 @@ private slots:
     void on_pushButtonPreOpSevcon_clicked();
     void on_pushButtonLogSCheck_clicked();
     void on_pushButtonOpSCheck_clicked();
-    void on_comboBoxNodeID_currentIndexChanged();
+    void on_comboBoxNodeID_currentIndexChanged(int index);
+
+    void on_pushButtonTPDO_clicked();
 
 private:
     Ui::MainWindow *ui;
-    QSerialPort *device;
+    //QSerialPort *device;
     CANOpen *secondwindow;
     SerialPort nowyserial;
 
