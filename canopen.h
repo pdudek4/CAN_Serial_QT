@@ -36,6 +36,7 @@ private:
     uint16_t SDO_Rx_ID;
 
     QTreeWidgetItem TreeItem[5][9];
+    QTreeWidgetItem TreeItem1[5][4];
 
     void createTreeItems();
 

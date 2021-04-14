@@ -57,7 +57,3 @@ int SerialPort::sendMessageToDevice(QString message)
 
 }
 
-//void SerialPort::ready1(){
-
-//    qDebug() << "Wywolano serialpoet ready";
-//}

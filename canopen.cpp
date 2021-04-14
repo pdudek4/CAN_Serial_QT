@@ -54,7 +54,7 @@ void CANOpen::on_treeWidget_itemDoubleClicked(QTreeWidgetItem *item, int column)
 
     index = item->parent()->text(0);
     subindex = item->text(0);
-    qDebug() << "Kliknięty item: " + index + subindex;
+    qDebug() << "Kliknięty item: " + index + " " + subindex;
 
     char msg[24];
     uint16_t i_index;
@@ -63,7 +63,8 @@ void CANOpen::on_treeWidget_itemDoubleClicked(QTreeWidgetItem *item, int column)
     i_index = index.toInt(&ok, 16);
     i_indexM = i_index >> 8;
     i_indexL = i_index & 0xff;
-    i_subindex = subindex.toInt(&ok, 10);
+    //i_subindex = subindex.toInt(&ok, 10);
+    i_subindex = item->parent()->indexOfChild(item);
 
     sprintf(msg, "M%03x,40%02x%02x%02x00000000;", SDO_Tx_ID, i_indexL, i_indexM, i_subindex);
 
@@ -81,49 +82,42 @@ void CANOpen::on_comboBoxNodeID_currentIndexChanged(int index)
 
 void CANOpen::createTreeItems()
 {
-    TreeItem[0][0].setText(0, "1A00");
-    TreeItem[0][0].setText(1, "index value");
-    ui->treeWidget->addTopLevelItem(&TreeItem[0][0]);
+    char nrsub[5], nri[18];
+//TPDO communication parameters
+    for(int i=0; i<5; i++){
+        std::sprintf(nri, "180%d", i);
+        TreeItem1[i][0].setText(0, nri);
+        std::sprintf(nri, "TPDO %d com param", i);
+        TreeItem1[i][0].setText(1, nri);
+        ui->treeWidget->addTopLevelItem(&TreeItem1[i][0]);
 
-    TreeItem[0][1].setText(0, "0");
-    TreeItem[0][1].setText(1, "subindex value");
-    TreeItem[0][0].addChild(&TreeItem[0][1]);
+        //std::sprintf(nrsub, "%d", j-1);
+        TreeItem1[i][1].setText(0, "Largest subindex");
+        TreeItem1[i][2].setText(0, "COB-ID used by PDO");
+        TreeItem1[i][3].setText(0, "Transmission type");
 
-    TreeItem[0][2].setText(0, "0");
-    TreeItem[0][2].setText(1, "subindex value");
-    TreeItem[0][0].addChild(&TreeItem[0][2]);
+        TreeItem1[i][0].addChild(&TreeItem1[i][1]);
+        TreeItem1[i][0].addChild(&TreeItem1[i][2]);
+        TreeItem1[i][0].addChild(&TreeItem1[i][3]);
 
-    TreeItem[0][3].setText(0, "0");
-    TreeItem[0][3].setText(1, "subindex value");
-    TreeItem[0][0].addChild(&TreeItem[0][3]);
+    }
 
+//TPDO mapping parameters
+    for(int i=0; i<5; i++){
+        std::sprintf(nri, "1A0%d", i);
+        TreeItem[i][0].setText(0, nri);
+        std::sprintf(nri, "TPDO %d map param", i);
+        TreeItem[i][0].setText(1, nri);
+        ui->treeWidget->addTopLevelItem(&TreeItem[i][0]);
 
+        TreeItem[i][1].setText(0, "Nr of mapped objects");
+        TreeItem[i][0].addChild(&TreeItem[i][1]);
 
-    TreeItem[1][0].setText(0, "1A01");
-    TreeItem[1][0].setText(1, "index value");
-    ui->treeWidget->addTopLevelItem(&TreeItem[1][0]);
+        for(int j=2; j<9; j++){
+          std::sprintf(nrsub, "Map%d", j-1);
+          TreeItem[i][j].setText(0, nrsub);
+          TreeItem[i][0].addChild(&TreeItem[i][j]);
+        }
+    }
 
-    TreeItem[1][1].setText(0, "0");
-    TreeItem[1][1].setText(1, "subindex value");
-    TreeItem[1][0].addChild(&TreeItem[1][1]);
-
-    TreeItem[1][2].setText(0, "0");
-    TreeItem[1][2].setText(1, "subindex value");
-    TreeItem[1][0].addChild(&TreeItem[1][2]);
-
-    TreeItem[1][3].setText(0, "0");
-    TreeItem[1][3].setText(1, "subindex value");
-    TreeItem[1][0].addChild(&TreeItem[1][3]);
-
-    TreeItem[1][4].setText(0, "0");
-    TreeItem[1][4].setText(1, "subindex value");
-    TreeItem[1][0].addChild(&TreeItem[1][4]);
-
-    TreeItem[1][5].setText(0, "0");
-    TreeItem[1][5].setText(1, "subindex value");
-    TreeItem[1][0].addChild(&TreeItem[1][5]);
-
-    TreeItem[1][6].setText(0, "0");
-    TreeItem[1][6].setText(1, "subindex value");
-    TreeItem[1][0].addChild(&TreeItem[1][6]);
 }

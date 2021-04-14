@@ -269,48 +269,37 @@ void MainWindow::CanSendMsg(uint16_t ID, uint8_t *tab)
 
 void MainWindow::readFromPort()
 {
-    qDebug() << "readFromPort";
-    while(nowyserial.device.canReadLine()){
-      QString line = nowyserial.device.readLine();
-qDebug() << "readFromPort while";
-      QString log;
-      bool ok;
-      ID_rcv = line[1];
-      ID_rcv += line[2];
-      ID_rcv += line[3];
+    const QByteArray data = nowyserial.device.readAll();
+    QString line = QString(data);
+qDebug() << line;
 
-      if(ID_rcv.toInt(&ok, 16) == SDO_Rx_ID){
-          SDO_response(line);
-          qDebug() << "readFromPor sdo rspons";
-      }
-      else{
-        log.append("<-ID: ");
-        log.append(ID_rcv);
-        log.append(" Dane: ");
+    QString log, tmp;
+    bool ok;
+    ID_rcv = line[1];
+    ID_rcv += line[2];
+    ID_rcv += line[3];
 
-//        bool ok;
-         QString tmp;
-      for(int i=0; i<8; i++){
-//        tmp = line[5+i*2];
-//        tmp += line[6+i*2];
-//        data_rcv[i] = tmp.toInt(&ok, 16);
-          log.append(line[5+2*i]);
-          log.append(line[6+2*i]);
-          log.append(" ");
-      }
-      // ODCZYTYWANIE PREDKOSCI************************
-      /*tmp = line[9];
-      tmp += line[10];
-      data_rcv[1] = tmp.toInt(&ok, 16);
-      ui->progressBar->setValue(data_rcv[1]); */
-      // ODCZYTYWANIE PREDKOSCI************************
+    log.append("<-ID: ");
+    log.append(ID_rcv);
+    log.append(" Dane: ");
 
-      this->addToLogs(log);
 
-      }
+    for(int i=0; i<8; i++){
+        log.append(line[5+2*i]);
+        log.append(line[6+2*i]);
+        log.append(" ");
     }
 
+    this->addToLogs(log);
+
+    if(ID_rcv.toInt(&ok, 16) == SDO_Rx_ID){
+        SDO_response(line);
+        qDebug() << "sdo response";
+    }
+    else addToLogs("");
+
 }
+
 
 void MainWindow::on_pushButtonFilterSet_clicked()
 {
@@ -548,6 +537,9 @@ void MainWindow::SDO_response(QString line)
     else if(i_index >= 0x1A00 && i_index <= 0x1A04){
         secondwindow->addValueToTree(i_index, i_subindex, value);
     }
+//    else if(i_index >= 0x1800 && i_index <= 0x1804){
+//        secondwindow->addValueToTree(i_index, i_subindex, value);
+//    }
 
 
 }
