@@ -12,15 +12,19 @@ CONFIG += c++11
 SOURCES += \
     canopen.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    serialport.cpp
 
 HEADERS += \
     canopen.h \
-    mainwindow.h
+    mainwindow.h \
+    serialport.h
 
 FORMS += \
     canopen.ui \
     mainwindow.ui
+
+RC_ICONS = moto.ico
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

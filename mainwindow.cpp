@@ -16,28 +16,43 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    this->setWindowTitle("LEM CANopen coronavirusless dialog software");
-    CANopenui = new CANOpen(this);
-    this->device = new QSerialPort(this);
+    this->setWindowTitle("LEM CANopen Magic software");
+    secondwindow = new CANOpen(this);
+    //this->device = new QSerialPort(this);
+
+    secondwindow->serial_second = &nowyserial;
+    //nowyserial.canOpenWin = secondwindow;
+
     setUi();
+    Sniffer = false;
 
     SDO_Tx_ID = 0x601;
     SDO_Rx_ID = 0x581;
+
 
 }
 
 MainWindow::~MainWindow()
 {
-    delete device;
-    delete CANopenui;
+    //delete device;
+    delete secondwindow;
     delete ui;
 }
 
 void MainWindow::on_pushButtonSearch_clicked()
 {
+//    this->addToLogs("Szukam urządzeń...");
+//    QList<QSerialPortInfo> devices;
+//    devices = QSerialPortInfo::availablePorts();
+
+//    for(int i = 0; i < devices.count(); i++) {
+//      this->addToLogs("Znalazłem urządzenie: " + devices.at(i).portName() + " " + devices.at(i).description());
+//      ui->comboBoxDevices->addItem(devices.at(i).portName() + " " + devices.at(i).description());
+//    }
+    ui->comboBoxDevices->clear();
     this->addToLogs("Szukam urządzeń...");
     QList<QSerialPortInfo> devices;
-    devices = QSerialPortInfo::availablePorts();
+    devices = nowyserial.Search();
 
     for(int i = 0; i < devices.count(); i++) {
       this->addToLogs("Znalazłem urządzenie: " + devices.at(i).portName() + " " + devices.at(i).description());
@@ -45,34 +60,96 @@ void MainWindow::on_pushButtonSearch_clicked()
     }
 }
 
-void MainWindow::addToLogs(QString message)
+void MainWindow::on_pushButtonLink_clicked()
 {
-    QTextCursor cursor = ui->textEditLogi->textCursor();
-    ui->textEditLogi->selectAll();
-    ui->textEditLogi->setFontPointSize(10);
-    ui->textEditLogi->setTextCursor( cursor );
-#ifdef _time
-    QString currentDateTime = QTime::currentTime().toString("hh:mm:ss");
-    ui->textEditLogi->append(currentDateTime + "   " + message);
-#else
-    ui->textEditLogi->append(message);
-#endif
+//    if(ui->comboBoxDevices->count() == 0)
+//    {
+//        this->addToLogs("Nie wykryto żadnych urządzeń!");
+//        return;
+//    }
 
+//    QString comboBoxQString = ui->comboBoxDevices->currentText();
+//    QStringList portList = comboBoxQString.split(0x20);
+//    QString portName = portList.first();
 
+//    this->device->setPortName(portName);
+
+//    // OTWÓRZ I SKONFIGURUJ PORT:
+//    if(!device->isOpen())
+//    {
+
+//        if(device->open(QSerialPort::ReadWrite))
+//        {
+//            this->device->setBaudRate(QSerialPort::Baud115200);
+//            this->device->setDataBits(QSerialPort::Data8);
+//            this->device->setParity(QSerialPort::NoParity);
+//            this->device->setStopBits(QSerialPort::OneStop);
+//            this->device->setFlowControl(QSerialPort::NoFlowControl);
+//            // CONNECT:
+//            connect(this->device, SIGNAL(readyRead()), this, SLOT(readFromPort()));
+//            this->addToLogs("Otwarto port szeregowy.");
+//        }
+//        else
+//        {
+//            this->addToLogs("Otwarcie portu szeregowego się nie powiodło!");
+//        }
+//    }
+//    else
+//    {
+//        this->addToLogs("Port już jest otwarty!");
+//        return;
+//    }
+
+    if(ui->comboBoxDevices->count() == 0)
+    {
+        this->addToLogs("Nie wykryto żadnych urządzeń!");
+        return;
+    }
+
+    QString comboBoxQString = ui->comboBoxDevices->currentText();
+    QStringList portList = comboBoxQString.split(0x20);
+    QString portName = portList.first();
+
+    //this->device->setPortName(portName);
+    nowyserial.device.setPortName(portName);
+    // OTWÓRZ I SKONFIGURUJ PORT:
+    int nr = nowyserial.Link();
+    switch(nr){
+    case 1:
+        // CONNECT:
+        //connect(this->device, SIGNAL(readyRead()),this, SLOT(readFromPort()));
+        connect(&nowyserial.device, SIGNAL(readyRead()), this, SLOT(readFromPort()));
+        this->addToLogs("Otwarto port szeregowy.");
+        break;
+    case 2:
+        this->addToLogs("Otwarcie portu szeregowego się nie powiodło!");
+        break;
+    case 3:
+        this->addToLogs("Port już jest otwarty!");
+        break;
+    }
+}
+
+void MainWindow::on_pushButtonClose_clicked()
+{
+    if(nowyserial.device.isOpen()) {
+      nowyserial.device.close();
+      nowyserial.disconnect(&nowyserial.device, SIGNAL(readyRead()), this, SLOT(readFromPort()));
+      this->addToLogs("Zamknięto połączenie.");
+    }
+    else {
+      this->addToLogs("Port nie jest otwarty!");
+        emit nowyserial.ready1();
+      return;
+    }
 }
 
 void MainWindow::sendMessageToDevice(QString message)
 {
-    QString canFrame;
-    if(this->device->isOpen() && this->device->isWritable()) {
-        this->addToLogs("Wysyłam do STM: " + message);
-        this->device->write(message.toStdString().c_str());
-    }
-    else {
-        this->addToLogs("Nie mogę wysłać wiadomości. Port nie jest otwarty!");
-    }
-#ifdef _msglog
-    if(message.length() == 22){
+   QString canFrame;
+
+   int nr = nowyserial.sendMessageToDevice(message);
+   if(nr == 1){
         canFrame = "->ID: " + message[1] + message[2] + message[3] +
                 " Dane: " + message[5] + message[6] + " " +
                 message[7] + message[8] + " " + message[9] + message[10] + " " +
@@ -80,7 +157,21 @@ void MainWindow::sendMessageToDevice(QString message)
                 message[15] + message[16] + " " + message[17] + message[18] + " " +
                 message[19] + message[20];
         addToLogs(canFrame);
-    }
+   }
+   else this->addToLogs("Nie mogę wysłać wiadomości. Port nie jest otwarty!");
+
+#ifdef _msglog
+    this->addToLogs("Wysyłano do STM: " + message);
+#endif
+}
+
+void MainWindow::addToLogs(QString message)
+{
+#ifdef _time
+    QString currentDateTime = QTime::currentTime().toString("hh:mm:ss");
+    ui->textEditLogi->append(currentDateTime + "   " + message);
+#else
+    ui->textEditLogi->append(message);
 #endif
 }
 
@@ -167,101 +258,95 @@ void MainWindow::setUi()
     //ui->progressBar->setValue(90);
 }
 
-void MainWindow::on_pushButtonLink_clicked()
+void MainWindow::CanSendMsg(uint16_t ID, uint8_t *tab)
 {
-    if(ui->comboBoxDevices->count() == 0)
-    {
-        this->addToLogs("Nie wykryto żadnych urządzeń!");
-        return;
-    }
-
-    QString comboBoxQString = ui->comboBoxDevices->currentText();
-    QStringList portList = comboBoxQString.split(0x20);
-    QString portName = portList.first();
-
-    this->device->setPortName(portName);
-
-    // OTWÓRZ I SKONFIGURUJ PORT:
-    if(!device->isOpen())
-    {
-
-        if(device->open(QSerialPort::ReadWrite))
-        {
-            this->device->setBaudRate(QSerialPort::Baud115200);
-            this->device->setDataBits(QSerialPort::Data8);
-            this->device->setParity(QSerialPort::NoParity);
-            this->device->setStopBits(QSerialPort::OneStop);
-            this->device->setFlowControl(QSerialPort::NoFlowControl);
-            // CONNECT:
-            connect(this->device, SIGNAL(readyRead()),this, SLOT(readFromPort()));
-            this->addToLogs("Otwarto port szeregowy.");
-        }
-        else
-        {
-            this->addToLogs("Otwarcie portu szeregowego się nie powiodło!");
-        }
-    }
-    else
-    {
-        this->addToLogs("Port już jest otwarty!");
-        return;
-    }
-}
-
-void MainWindow::on_pushButtonClose_clicked()
-{
-    if(this->device->isOpen()) {
-      this->device->close();
-      this->addToLogs("Zamknięto połączenie.");
-    }
-    else {
-      this->addToLogs("Port nie jest otwarty!");
-      return;
-    }
+    char msg[24];
+    sprintf(msg, "M%03x,%02x%02x%02x%02x%02x%02x%02x%02x;", ID,
+            tab[0], tab[1], tab[2], tab[3], tab[4], tab[5], tab[6], tab[7]);
+    addToLogs(msg);
+    this->sendMessageToDevice(msg);
 }
 
 void MainWindow::readFromPort()
 {
-    while(this->device->canReadLine()){
-      QString line = this->device->readLine();
+    const QByteArray data = nowyserial.device.readAll();
+    QString line = QString(data);
+    QString log, tmp;
+    bool ok;
 
-      QString log;
-      bool ok;
-      ID_rcv = line[1];
-      ID_rcv += line[2];
-      ID_rcv += line[3];
+    uint16_t i_ID_rcv;
+    uint8_t payload[8];
 
-      if(ID_rcv.toInt(&ok, 16) == SDO_Rx_ID){
-          SDO_response(line);
-      }
-      else{
-        log.append("<---ID: ");
-        log.append(ID_rcv);
-        log.append(" Dane: ");
+    ID_rcv = line[1];
+    ID_rcv += line[2];
+    ID_rcv += line[3];
 
-//        bool ok;
-         QString tmp;
-      for(int i=0; i<8; i++){
-//        tmp = line[5+i*2];
-//        tmp += line[6+i*2];
-//        data_rcv[i] = tmp.toInt(&ok, 16);
-          log.append(line[5+2*i]);
-          log.append(line[6+2*i]);
-          log.append(" ");
-      }
-      // ODCZYTYWANIE PREDKOSCI************************
-      /*tmp = line[9];
-      tmp += line[10];
-      data_rcv[1] = tmp.toInt(&ok, 16);
-      ui->progressBar->setValue(data_rcv[1]); */
-      // ODCZYTYWANIE PREDKOSCI************************
+    log.append("<-ID: ");
+    log.append(ID_rcv);
+    log.append(" Dane: ");
 
-      this->addToLogs(log);
+    int i=0;
+    for(i=0; i<8; i++){
+        tmp.append(line[5+2*i]);
+        tmp.append(line[6+2*i]);
+        payload[i] = tmp.toInt(&ok, 16);
+        tmp.clear();
 
-      }
+        log.append(line[5+2*i]);
+        log.append(line[6+2*i]);
+        log.append(" ");
+    }
+    if(Sniffer == false){
+        this->addToLogs(log);
+    }
+    else{
+        i_ID_rcv = ID_rcv.toInt(&ok, 10);
+
+        int j=0,f=0;
+        for (j=0; j<(int)myvector.size(); j++){             //szukanie czy ID juz jest zapisane
+            //qDebug() << "1 for: " << j;
+            if(myvector[j].ID == i_ID_rcv){
+                f = 1;
+                break;
+                }
+        }
+        if (f){
+            //jest takie ID w vectorze
+            for(int i=0; i<8; i++){
+                myvector[j].payload[i] = payload[i];
+            }
+        }
+        else{
+            //nie ma takiego ID, wiec dodaj
+            myvector.push_back(new_Msg());
+
+            j=(int)myvector.size() - 1;
+            myvector[j].ID = i_ID_rcv;
+            for(int i=0; i<8; i++){
+                myvector[j].payload[i] = payload[i];
+            }
+        }
+
+        ui->textEditLogi->clear();
+        for(int i=0; i<(int)myvector.size(); i++){
+            tmp.append("ID: ");
+            tmp.append(QString::number(myvector[i].ID, 10));
+            tmp.append(" >> ");
+            for(int j=0; j<8; j++){
+                tmp.append(QString::number(myvector[i].payload[j], 16));
+                tmp.append("  ");
+            }
+            tmp.append("\r");
+        }
+        ui->textEditLogi->append(tmp);
+    }
+    if(ID_rcv.toInt(&ok, 16) == SDO_Rx_ID){
+        SDO_response(line);
+        qDebug() << "sdo response";
     }
 
 }
+
 
 void MainWindow::on_pushButtonFilterSet_clicked()
 {
@@ -316,13 +401,13 @@ void MainWindow::on_pushButtonSDORead_clicked()
 
     sprintf(msg, "M%03x,40%02x%02x%02x00000000;", SDO_Tx_ID, indexL, indexM, subindex);
 
-    this->sendMessageToDevice(msg);
-
     log.append("SDO Read 0x");
     log.append(QString::number(index, 16));
     log.append(" ");
     log.append(QString::number(subindex, 16));
     addToLogs(log);
+
+    this->sendMessageToDevice(msg);
 }
 
 void MainWindow::on_pushButtonSDOWrite_clicked()
@@ -330,7 +415,7 @@ void MainWindow::on_pushButtonSDOWrite_clicked()
     //Write OD Value
     // ID=0x601 B0=0x22 B1=indexLSB B2=indexMSB B3=subindex B4-B7=wartość OD
     char msg[24];
-    QString log, q_value;
+    QString log, value, si_value;
     uint16_t index, ODvalue1, ODvalue2;
     uint8_t indexM, indexL, subindex;
     uint32_t ODvalue;
@@ -348,7 +433,7 @@ void MainWindow::on_pushButtonSDOWrite_clicked()
     ODvalue1 = ui->spinBoxODValue1->value();
     ODvalue2 = ui->spinBoxODValue2->value();
     ODvalue = (ODvalue1 << 16) | ODvalue2;
-    q_value = QString::number(ODvalue, 16);
+    value = QString::number(ODvalue, 16);
 
     if(ODvalue <= 0xff){
         valueB0 = ODvalue;
@@ -376,23 +461,30 @@ void MainWindow::on_pushButtonSDOWrite_clicked()
     sprintf(msg, "M%03x,22%02x%02x%02x%02x%02x%02x%02x;", SDO_Tx_ID, indexL, indexM, subindex,
             valueB0, valueB1, valueB2, valueB3);
 
-    this->sendMessageToDevice(msg);
+
+    si_value = QString::number(ODvalue, 10);
     //komunikat potwierdzający do logów
     log.append("SDO Write 0x");
     log.append(QString::number(index, 16));
     log.append(" ");
     log.append(QString::number(subindex, 16));
-    log.append(" =");
-    log.append(q_value);
+    log.append(" =0x");
+    log.append(value);
+    log.append("  dec=");
+    log.append(si_value);
     addToLogs(log);
+
+    this->sendMessageToDevice(msg);
 }
 
 void MainWindow::on_pushButtonLogin_clicked()
 {
-    char msg[24];
-    sprintf(msg, "M%03x,221010014F50454E;", SDO_Tx_ID);
-    addToLogs(msg);
-    this->sendMessageToDevice(msg);
+    uint8_t dane[8] = {0x22, 0x10, 0x10, 0x01, 0x4F, 0x50, 0x45, 0x4E};
+    CanSendMsg(SDO_Tx_ID, dane);
+    //char msg[24];
+    //sprintf(msg, "M%03x,221010014F50454E;", SDO_Tx_ID);
+    //addToLogs(msg);
+    //this->sendMessageToDevice(msg);
 }
 
 void MainWindow::on_pushButtonSave_clicked()
@@ -405,9 +497,9 @@ void MainWindow::on_pushButtonSave_clicked()
 
 void MainWindow::SDO_response(QString line)
 {
-    QString log, q_value;
+    QString log, s_value;
     QString cmd, index, subindex, value;
-    int icmd, sdo_n, i_value;
+    unsigned int icmd, sdo_n, i_value, i_index, i_subindex;
     bool ok;
     ui->lineEdit->clear();
 
@@ -460,29 +552,43 @@ void MainWindow::SDO_response(QString line)
        value += line[14];
        break;
     }
+
     i_value = value.toInt(&ok, 16);
-    q_value = QString::number(i_value);
-    this->addToLogs("****************");
-    log.append("OD ");
-    log.append("0x");
+    s_value = QString::number(i_value);
+
+    log.append("\tOdp 0x");
     log.append(index);
     log.append(" ");
     log.append(subindex);
     log.append("  =0x");
     log.append(value);
     log.append("  dec=");
-    log.append(q_value);
+    log.append(s_value);
 
-    ui->lineEdit->setText(value);
+    ui->lineEdit->setText("0x" + value);
     this->addToLogs(log);
-    this->addToLogs("****************");
-}
+    this->addToLogs("");
 
-void MainWindow::on_pushButtonNodeID_clicked()
-{
-    Node_ID = ui->comboBoxNodeID->currentText().toInt();
-    SDO_Tx_ID = 0x600 + Node_ID;
-    SDO_Rx_ID = 0x580 + Node_ID;
+    i_index = index.toUInt(&ok, 16);
+    i_subindex = subindex.toUInt(&ok, 16);
+   qDebug() << "index: " << i_index << " subindex: " << i_subindex;
+
+    if(index == "5000"){
+        if(value == "04") ui->checkBoxLogin->setChecked(1);
+        else ui->checkBoxLogin->setChecked(0);
+    }
+    else if(index == "5110"){ //SEVCON operational
+        if(value == "7f") ui->checkBoxPreop->setChecked(1);
+        else ui->checkBoxPreop->setChecked(0);
+    }
+    else if(i_index >= 0x1A00 && i_index <= 0x1A04){
+        secondwindow->addValueToTree(i_index, i_subindex, value);
+    }
+//    else if(i_index >= 0x1800 && i_index <= 0x1804){
+//        secondwindow->addValueToTree(i_index, i_subindex, value);
+//    }
+
+
 }
 
 void MainWindow::on_pushButtonLoginSevcon_clicked()
@@ -492,29 +598,22 @@ void MainWindow::on_pushButtonLoginSevcon_clicked()
     // 0x5000, 2, =0x4bdf  -> password
     //login level check 0x5000, 1, 4=Engineering, 1=User
     char msg[24];
-    //OD read state login level
-    sprintf(msg, "M%03x,4000500100000000;", SDO_Tx_ID);
+
+    //user id=0
+    sprintf(msg, "M%03x,2200500300000000;", SDO_Tx_ID);
     this->sendMessageToDevice(msg);
 
-    QString OD_value = ui->lineEdit->text();
-    if(OD_value != "04"){
-        qDebug() << "Login level = " + OD_value;
-        //user id=0
-        sprintf(msg, "M%03x,2200500300000000;", SDO_Tx_ID);
-        this->sendMessageToDevice(msg);
-        Sleep(500);
-        //login password
-        sprintf(msg, "M%03x,22005002df4b0000;", SDO_Tx_ID);
-        this->sendMessageToDevice(msg);
+    volatile int g=0;
+    for(int i=0; i<0xFFFF; i++){
+        for(int j=0; j<0xFFF; j++){
+        g++;
+        }
     }
-    Sleep(500);
-    //OD read, sprawdzenie zmiany login level
-    sprintf(msg, "M%03x,4000500100000000;", SDO_Tx_ID);
+
+    //login password
+    sprintf(msg, "M%03x,22005002df4b0000;", SDO_Tx_ID);
     this->sendMessageToDevice(msg);
 
-    OD_value = ui->lineEdit->text();
-    qDebug() << "Check login level = " + OD_value;
-    if(OD_value == "04") ui->checkBoxLogin->setChecked(1);
 }
 
 void MainWindow::on_pushButtonSaveSevcon_clicked()
@@ -530,23 +629,8 @@ void MainWindow::on_pushButtoOpSevcon_clicked()
     //op set 0x2800, 0, =0
     //op check 0x5110, 0, =5
     char msg[24];
-    //OD read state
-    sprintf(msg, "M%03x,4010510000000000;", SDO_Tx_ID);
+    sprintf(msg, "M%03x,2200280000000000;", SDO_Tx_ID);
     this->sendMessageToDevice(msg);
-
-    QString OD_value = ui->lineEdit->text();
-    if(OD_value != "05"){
-         qDebug() << "SEVCON state = " + OD_value;
-        sprintf(msg, "M%03x,2200280000000000;", SDO_Tx_ID);
-        this->sendMessageToDevice(msg);
-    }
-    Sleep(500);
-    //OD read, sprawdzenie zmiany
-    sprintf(msg, "M%03x,4010510000000000;", SDO_Tx_ID);
-    this->sendMessageToDevice(msg);
-
-    OD_value = ui->lineEdit->text();
-    if(OD_value == "05") ui->checkBoxPreop->setChecked(0);
 }
 
 void MainWindow::on_pushButtonPreOpSevcon_clicked()
@@ -554,22 +638,39 @@ void MainWindow::on_pushButtonPreOpSevcon_clicked()
     //pre-op set 0x2800, 0, =1
     //pre-op check 0x5110, 0, =127 or 0x7f
     char msg[24];
-    //OD read state
+    sprintf(msg, "M%03x,2200280001000000;", SDO_Tx_ID);
+    this->sendMessageToDevice(msg);
+}
+
+void MainWindow::on_pushButtonLogSCheck_clicked()
+{
+    char msg[24];
+    //OD read state login level
+    sprintf(msg, "M%03x,4000500100000000;", SDO_Tx_ID);
+    this->sendMessageToDevice(msg);
+}
+
+void MainWindow::on_pushButtonOpSCheck_clicked()
+{
+    char msg[24];
+    //OD read operational state
     sprintf(msg, "M%03x,4010510000000000;", SDO_Tx_ID);
     this->sendMessageToDevice(msg);
+}
 
-    QString OD_value = ui->lineEdit->text();
-    if(OD_value != "7f"){
-        qDebug() << "SEVCON state = " + OD_value;
-        sprintf(msg, "M%03x,2200280001000000;", SDO_Tx_ID);
-        this->sendMessageToDevice(msg);
-    }
-    else //pokaz
-    Sleep(500);
-    //OD read, sprawdzenie zmiany
-    sprintf(msg, "M%03x,4010510000000000;", SDO_Tx_ID);
-    this->sendMessageToDevice(msg);
+void MainWindow::on_comboBoxNodeID_currentIndexChanged(int index)
+{
+    Node_ID = ui->comboBoxNodeID->currentText().toInt();
+    SDO_Tx_ID = 0x600 + index + 1;
+    SDO_Rx_ID = 0x580 + index + 1;
+}
 
-    OD_value = ui->lineEdit->text();
-    if(OD_value == "7f") ui->checkBoxPreop->setChecked(1);
+void MainWindow::on_pushButtonTPDO_clicked()
+{
+    secondwindow->show();
+}
+
+void MainWindow::on_radioButton_Sniffer_toggled(bool checked)
+{
+    Sniffer = checked;
 }
