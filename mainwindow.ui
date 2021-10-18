@@ -111,7 +111,7 @@
    <widget class="QPushButton" name="pushButton_3">
     <property name="geometry">
      <rect>
-      <x>390</x>
+      <x>450</x>
       <y>520</y>
       <width>191</width>
       <height>21</height>
@@ -878,6 +878,19 @@
      <string>TPDO</string>
     </property>
    </widget>
+   <widget class="QRadioButton" name="radioButton_Sniffer">
+    <property name="geometry">
+     <rect>
+      <x>350</x>
+      <y>520</y>
+      <width>61</width>
+      <height>19</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Sniffer</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
@@ -933,6 +946,22 @@
     <hint type="destinationlabel">
      <x>440</x>
      <y>251</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>radioButton_Sniffer</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>textEditLogi</receiver>
+   <slot>clear()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>367</x>
+     <y>529</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>376</x>
+     <y>469</y>
     </hint>
    </hints>
   </connection>

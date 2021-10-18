@@ -24,10 +24,11 @@ MainWindow::MainWindow(QWidget *parent)
     //nowyserial.canOpenWin = secondwindow;
 
     setUi();
-
+    Sniffer = false;
 
     SDO_Tx_ID = 0x601;
     SDO_Rx_ID = 0x581;
+
 
 }
 
@@ -48,7 +49,7 @@ void MainWindow::on_pushButtonSearch_clicked()
 //      this->addToLogs("Znalazłem urządzenie: " + devices.at(i).portName() + " " + devices.at(i).description());
 //      ui->comboBoxDevices->addItem(devices.at(i).portName() + " " + devices.at(i).description());
 //    }
-
+    ui->comboBoxDevices->clear();
     this->addToLogs("Szukam urządzeń...");
     QList<QSerialPortInfo> devices;
     devices = nowyserial.Search();
@@ -133,6 +134,7 @@ void MainWindow::on_pushButtonClose_clicked()
 {
     if(nowyserial.device.isOpen()) {
       nowyserial.device.close();
+      nowyserial.disconnect(&nowyserial.device, SIGNAL(readyRead()), this, SLOT(readFromPort()));
       this->addToLogs("Zamknięto połączenie.");
     }
     else {
@@ -171,8 +173,6 @@ void MainWindow::addToLogs(QString message)
 #else
     ui->textEditLogi->append(message);
 #endif
-
-
 }
 
 void MainWindow::setUi()
@@ -271,10 +271,12 @@ void MainWindow::readFromPort()
 {
     const QByteArray data = nowyserial.device.readAll();
     QString line = QString(data);
-qDebug() << line;
-
     QString log, tmp;
     bool ok;
+
+    uint16_t i_ID_rcv;
+    uint8_t payload[8];
+
     ID_rcv = line[1];
     ID_rcv += line[2];
     ID_rcv += line[3];
@@ -283,20 +285,65 @@ qDebug() << line;
     log.append(ID_rcv);
     log.append(" Dane: ");
 
+    int i=0;
+    for(i=0; i<8; i++){
+        tmp.append(line[5+2*i]);
+        tmp.append(line[6+2*i]);
+        payload[i] = tmp.toInt(&ok, 16);
+        tmp.clear();
 
-    for(int i=0; i<8; i++){
         log.append(line[5+2*i]);
         log.append(line[6+2*i]);
         log.append(" ");
     }
+    if(Sniffer == false){
+        this->addToLogs(log);
+    }
+    else{
+        i_ID_rcv = ID_rcv.toInt(&ok, 10);
 
-    this->addToLogs(log);
+        int j=0,f=0;
+        for (j=0; j<(int)myvector.size(); j++){             //szukanie czy ID juz jest zapisane
+            //qDebug() << "1 for: " << j;
+            if(myvector[j].ID == i_ID_rcv){
+                f = 1;
+                break;
+                }
+        }
+        if (f){
+            //jest takie ID w vectorze
+            for(int i=0; i<8; i++){
+                myvector[j].payload[i] = payload[i];
+            }
+        }
+        else{
+            //nie ma takiego ID, wiec dodaj
+            myvector.push_back(new_Msg());
 
+            j=(int)myvector.size() - 1;
+            myvector[j].ID = i_ID_rcv;
+            for(int i=0; i<8; i++){
+                myvector[j].payload[i] = payload[i];
+            }
+        }
+
+        ui->textEditLogi->clear();
+        for(int i=0; i<(int)myvector.size(); i++){
+            tmp.append("ID: ");
+            tmp.append(QString::number(myvector[i].ID, 10));
+            tmp.append(" >> ");
+            for(int j=0; j<8; j++){
+                tmp.append(QString::number(myvector[i].payload[j], 16));
+                tmp.append("  ");
+            }
+            tmp.append("\r");
+        }
+        ui->textEditLogi->append(tmp);
+    }
     if(ID_rcv.toInt(&ok, 16) == SDO_Rx_ID){
         SDO_response(line);
         qDebug() << "sdo response";
     }
-    else addToLogs("");
 
 }
 
@@ -621,4 +668,9 @@ void MainWindow::on_comboBoxNodeID_currentIndexChanged(int index)
 void MainWindow::on_pushButtonTPDO_clicked()
 {
     secondwindow->show();
+}
+
+void MainWindow::on_radioButton_Sniffer_toggled(bool checked)
+{
+    Sniffer = checked;
 }
