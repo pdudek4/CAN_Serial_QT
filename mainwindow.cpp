@@ -8,8 +8,8 @@
 #include <QDateTime>
 #include <stdio.h>
 
-//#define _msglog
-//#define _time
+#define _msglog
+#define _time
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -150,12 +150,26 @@ void MainWindow::sendMessageToDevice(QString message)
 
    int nr = nowyserial.sendMessageToDevice(message);
    if(nr == 1){
-        canFrame = "->ID: " + message[1] + message[2] + message[3] +
-                " Dane: " + message[5] + message[6] + " " +
-                message[7] + message[8] + " " + message[9] + message[10] + " " +
-                message[11] + message[12] + " " + message[13] + message[14] + " " +
-                message[15] + message[16] + " " + message[17] + message[18] + " " +
-                message[19] + message[20];
+//        canFrame = "->ID: " + message[1] + message[2] + message[3] +
+//                " Dane: " + message[5] + message[6] + " " +
+//                message[7] + message[8] + " " + message[9] + message[10] + " " +
+//                message[11] + message[12] + " " + message[13] + message[14] + " " +
+//                message[15] + message[16] + " " + message[17] + message[18] + " " +
+//                message[19] + message[20];
+        canFrame.append("->ID: ");
+        canFrame.append(message[1]);
+        canFrame.append(message[2]);
+        canFrame.append(message[3]);
+        canFrame.append(" :");
+        canFrame.append(ui->comboBoxDLC->currentText());
+        canFrame.append(": Dane: ");
+        for(int i=0; i<(ui->comboBoxDLC->currentIndex() + 1); i++){
+            canFrame.append(message[2*i+5]);
+            canFrame.append(message[2*i+6]);
+            canFrame.append(" ");
+        }
+
+
         addToLogs(canFrame);
    }
    else this->addToLogs("Nie mogę wysłać wiadomości. Port nie jest otwarty!");
@@ -236,6 +250,7 @@ void MainWindow::setUi()
     ui->comboBoxPasmo->addItem("250");
     ui->comboBoxPasmo->addItem("500");
     ui->comboBoxPasmo->addItem("1000");
+    ui->comboBoxDLC->setCurrentIndex(7);
 
     ui->spinBoxIndex->setMaximum(0xFFFF);
     ui->spinBoxSubIndex->setMaximum(0x20);
@@ -257,11 +272,11 @@ void MainWindow::setUi()
 
     //ui->progressBar->setValue(90);
 }
-
+//na razie tylko w on_pushButtonLogin_clicked
 void MainWindow::CanSendMsg(uint16_t ID, uint8_t *tab)
 {
     char msg[24];
-    sprintf(msg, "M%03x,%02x%02x%02x%02x%02x%02x%02x%02x;", ID,
+    sprintf(msg, "M%03x8%02x%02x%02x%02x%02x%02x%02x%02x;", ID,
             tab[0], tab[1], tab[2], tab[3], tab[4], tab[5], tab[6], tab[7]);
     addToLogs(msg);
     this->sendMessageToDevice(msg);
@@ -274,19 +289,26 @@ void MainWindow::readFromPort()
     QString log, tmp;
     bool ok;
 
-    uint16_t i_ID_rcv;
+    uint16_t i_ID_rcv, i_DLC;
+    QString DLC_rcv;
     uint8_t payload[8];
 
     ID_rcv = line[1];
     ID_rcv += line[2];
     ID_rcv += line[3];
+    DLC_rcv = line[4];
 
-    log.append("<-ID: ");
+    //przelicz DLC na inta
+    i_DLC = DLC_rcv.toUInt(&ok, 10);
+
+    log.append("<-ID: 0x");
     log.append(ID_rcv);
-    log.append(" Dane: ");
+    log.append(" :");
+    log.append(DLC_rcv);
+    log.append(": Dane: ");
 
     int i=0;
-    for(i=0; i<8; i++){
+    for(i=0; i<i_DLC; i++){
         tmp.append(line[5+2*i]);
         tmp.append(line[6+2*i]);
         payload[i] = tmp.toInt(&ok, 16);
@@ -306,13 +328,14 @@ void MainWindow::readFromPort()
         for (j=0; j<(int)myvector.size(); j++){             //szukanie czy ID juz jest zapisane
             //qDebug() << "1 for: " << j;
             if(myvector[j].ID == i_ID_rcv){
+                myvector[j].DLC = i_DLC;
                 f = 1;
                 break;
-                }
+            }
         }
         if (f){
             //jest takie ID w vectorze
-            for(int i=0; i<8; i++){
+            for(int i=0; i<myvector[j].DLC; i++){
                 myvector[j].payload[i] = payload[i];
             }
         }
@@ -322,17 +345,20 @@ void MainWindow::readFromPort()
 
             j=(int)myvector.size() - 1;
             myvector[j].ID = i_ID_rcv;
-            for(int i=0; i<8; i++){
+            myvector[j].DLC = i_DLC;
+            for(int i=0; i<myvector[j].DLC; i++){
                 myvector[j].payload[i] = payload[i];
             }
         }
 
         ui->textEditLogi->clear();
         for(int i=0; i<(int)myvector.size(); i++){
-            tmp.append("ID: ");
+            tmp.append("<-ID: 0x");
             tmp.append(QString::number(myvector[i].ID, 10));
-            tmp.append(" >> ");
-            for(int j=0; j<8; j++){
+            tmp.append(" :");
+            tmp.append(QString::number(myvector[i].DLC, 16));
+            tmp.append(": Dane: ");
+            for(int j=0; j<myvector[i].DLC; j++){
                 tmp.append(QString::number(myvector[i].payload[j], 16));
                 tmp.append("  ");
             }
@@ -352,7 +378,7 @@ void MainWindow::on_pushButtonFilterSet_clicked()
 {
     //wyslij ramke z wartosciami 4 filtrow
     char msg[24];
-    sprintf(msg, "FCHG,%03x%03x%03x%03x;;;;;", ui->spinBox_F0->value(),
+    sprintf(msg, "FCHG0%03x%03x%03x%03x;;;;;", ui->spinBox_F0->value(),
             ui->spinBox_F1->value(), ui->spinBox_F2->value(), ui->spinBox_F3->value());
 
     this->sendMessageToDevice(msg);
@@ -361,13 +387,15 @@ void MainWindow::on_pushButtonFilterSet_clicked()
 void MainWindow::on_pushButtonFilterOff_clicked()
 {
     //wyslij ramke z informacja zeby wylaczyc filtrowanie
-    this->sendMessageToDevice("FDEA,123456789123;;;;;");
+    this->sendMessageToDevice("FDEA123456789123;;;;;");
 }
 
 void MainWindow::on_pushButtonSendMsg_clicked()
 {
     char msg[24];
-    sprintf(msg, "M%03x,%02x%02x%02x%02x%02x%02x%02x%02x;", ui->spinBox_ID->value(),
+    DLC_out = ui->comboBoxDLC->currentIndex() + 1;
+
+    sprintf(msg, "M%03x%x%02x%02x%02x%02x%02x%02x%02x%02x;", ui->spinBox_ID->value(), DLC_out,
             ui->spinBox_B0->value(), ui->spinBox_B1->value(), ui->spinBox_B2->value(), ui->spinBox_B3->value(),
             ui->spinBox_B4->value(), ui->spinBox_B5->value(), ui->spinBox_B6->value(), ui->spinBox_B7->value());
 
@@ -376,7 +404,7 @@ void MainWindow::on_pushButtonSendMsg_clicked()
 
 void MainWindow::on_pushButtonPasmo_clicked()
 {
-    QString msg = "PASM,";
+    QString msg = "PASM0";
     QString pasmo_cb = ui->comboBoxPasmo->currentText();
     pasmo_cb.resize(3);
     msg.append(pasmo_cb);
@@ -399,7 +427,7 @@ void MainWindow::on_pushButtonSDORead_clicked()
     indexL = index & 0xff;
     subindex = ui->spinBoxSubIndex->value();
 
-    sprintf(msg, "M%03x,40%02x%02x%02x00000000;", SDO_Tx_ID, indexL, indexM, subindex);
+    sprintf(msg, "M%03x840%02x%02x%02x00000000;", SDO_Tx_ID, indexL, indexM, subindex);
 
     log.append("SDO Read 0x");
     log.append(QString::number(index, 16));
@@ -458,7 +486,7 @@ void MainWindow::on_pushButtonSDOWrite_clicked()
         DLC = '4';
     }
     //zapi i sevcon działa bez dlc w B0 = 0x22
-    sprintf(msg, "M%03x,22%02x%02x%02x%02x%02x%02x%02x;", SDO_Tx_ID, indexL, indexM, subindex,
+    sprintf(msg, "M%03x822%02x%02x%02x%02x%02x%02x%02x;", SDO_Tx_ID, indexL, indexM, subindex,
             valueB0, valueB1, valueB2, valueB3);
 
 
@@ -490,7 +518,7 @@ void MainWindow::on_pushButtonLogin_clicked()
 void MainWindow::on_pushButtonSave_clicked()
 {
     char msg[24];
-    sprintf(msg, "M%03x,2210100173617665;", SDO_Tx_ID);
+    sprintf(msg, "M%03x82210100173617665;", SDO_Tx_ID);
     addToLogs(msg);
     this->sendMessageToDevice(msg);
 }
@@ -600,18 +628,18 @@ void MainWindow::on_pushButtonLoginSevcon_clicked()
     char msg[24];
 
     //user id=0
-    sprintf(msg, "M%03x,2200500300000000;", SDO_Tx_ID);
+    sprintf(msg, "M%03x82200500300000000;", SDO_Tx_ID);
     this->sendMessageToDevice(msg);
 
     volatile int g=0;
     for(int i=0; i<0xFFFF; i++){
-        for(int j=0; j<0xFFF; j++){
+        for(int j=0; j<0x3FFF; j++){
         g++;
         }
     }
 
     //login password
-    sprintf(msg, "M%03x,22005002df4b0000;", SDO_Tx_ID);
+    sprintf(msg, "M%03x822005002df4b0000;", SDO_Tx_ID);
     this->sendMessageToDevice(msg);
 
 }
@@ -620,7 +648,7 @@ void MainWindow::on_pushButtonSaveSevcon_clicked()
 {
     char msg[24];
     //OD write save parameters
-    sprintf(msg, "M%03x,2210100173617665;", SDO_Tx_ID);
+    sprintf(msg, "M%03x82210100173617665;", SDO_Tx_ID);
     this->sendMessageToDevice(msg);
 }
 
@@ -629,7 +657,7 @@ void MainWindow::on_pushButtoOpSevcon_clicked()
     //op set 0x2800, 0, =0
     //op check 0x5110, 0, =5
     char msg[24];
-    sprintf(msg, "M%03x,2200280000000000;", SDO_Tx_ID);
+    sprintf(msg, "M%03x82200280000000000;", SDO_Tx_ID);
     this->sendMessageToDevice(msg);
 }
 
@@ -638,7 +666,7 @@ void MainWindow::on_pushButtonPreOpSevcon_clicked()
     //pre-op set 0x2800, 0, =1
     //pre-op check 0x5110, 0, =127 or 0x7f
     char msg[24];
-    sprintf(msg, "M%03x,2200280001000000;", SDO_Tx_ID);
+    sprintf(msg, "M%03x82200280001000000;", SDO_Tx_ID);
     this->sendMessageToDevice(msg);
 }
 
@@ -646,7 +674,7 @@ void MainWindow::on_pushButtonLogSCheck_clicked()
 {
     char msg[24];
     //OD read state login level
-    sprintf(msg, "M%03x,4000500100000000;", SDO_Tx_ID);
+    sprintf(msg, "M%03x84000500100000000;", SDO_Tx_ID);
     this->sendMessageToDevice(msg);
 }
 
@@ -654,7 +682,7 @@ void MainWindow::on_pushButtonOpSCheck_clicked()
 {
     char msg[24];
     //OD read operational state
-    sprintf(msg, "M%03x,4010510000000000;", SDO_Tx_ID);
+    sprintf(msg, "M%03x84010510000000000;", SDO_Tx_ID);
     this->sendMessageToDevice(msg);
 }
 

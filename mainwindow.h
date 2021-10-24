@@ -62,11 +62,14 @@ private:
     QString ID_rcv;
     uint8_t data_rcv[8];
     uint8_t Node_ID;
+    uint8_t DLC_in;
+    uint8_t DLC_out;
     uint16_t SDO_Tx_ID;
     uint16_t SDO_Rx_ID;
     enum Op_state {preop, op};
     struct new_Msg{
         uint16_t ID;
+        uint8_t DLC;
         uint8_t payload[8];
     };
     bool Sniffer;
