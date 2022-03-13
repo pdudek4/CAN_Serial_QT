@@ -8,8 +8,9 @@
 #include <QDateTime>
 #include <stdio.h>
 
-#define _msglog
-#define _time
+//#define _msglog
+//#define _time
+#define _UART
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -284,14 +285,28 @@ void MainWindow::CanSendMsg(uint16_t ID, uint8_t *tab)
 
 void MainWindow::readFromPort()
 {
-    const QByteArray data = nowyserial.device.readAll();
-    QString line = QString(data);
+    QString line_tmp;
+    static QString line;
     QString log, tmp;
     bool ok;
 
     uint16_t i_ID_rcv, i_DLC;
     QString DLC_rcv;
     uint8_t payload[8];
+
+    const QByteArray data = nowyserial.device.readAll();
+    line_tmp = QString(data);
+
+    #ifdef _UART
+    int len;
+    len = line_tmp.length();
+    line.append(line_tmp);
+    if( line_tmp[len -1] != '\n'){
+       return;
+    }
+    #else
+    line.append(line_tmp);
+    #endif
 
     ID_rcv = line[1];
     ID_rcv += line[2];
@@ -322,8 +337,7 @@ void MainWindow::readFromPort()
         this->addToLogs(log);
     }
     else{
-        i_ID_rcv = ID_rcv.toInt(&ok, 10);
-
+        i_ID_rcv = ID_rcv.toInt(&ok, 16);
         int j=0,f=0;
         for (j=0; j<(int)myvector.size(); j++){             //szukanie czy ID juz jest zapisane
             //qDebug() << "1 for: " << j;
@@ -354,7 +368,7 @@ void MainWindow::readFromPort()
         ui->textEditLogi->clear();
         for(int i=0; i<(int)myvector.size(); i++){
             tmp.append("<-ID: 0x");
-            tmp.append(QString::number(myvector[i].ID, 10));
+            tmp.append(QString::number(myvector[i].ID, 16));
             tmp.append(" :");
             tmp.append(QString::number(myvector[i].DLC, 16));
             tmp.append(": Dane: ");
@@ -371,6 +385,7 @@ void MainWindow::readFromPort()
         qDebug() << "sdo response";
     }
 
+    line.clear();
 }
 
 
@@ -387,7 +402,7 @@ void MainWindow::on_pushButtonFilterSet_clicked()
 void MainWindow::on_pushButtonFilterOff_clicked()
 {
     //wyslij ramke z informacja zeby wylaczyc filtrowanie
-    this->sendMessageToDevice("FDEA123456789123;;;;;");
+    this->sendMessageToDevice("FDEA1234567891234;;;;;");
 }
 
 void MainWindow::on_pushButtonSendMsg_clicked()
